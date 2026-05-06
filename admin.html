@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FisioTrack — Administrador</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0e14; --surface: #12181f; --surface2: #181f28; --surface3: #1e2733;
+  --border: #252d38; --border2: #2f3d4f;
+  --lime: #a3e635; --lime-dim: #4d6e19; --lime-glow: rgba(163,230,53,.10);
+  --text: #dde5ef; --text-mid: #8a9ab0; --text-dim: #3d4f63;
+  --red: #f87171; --red-dim: #7f1d1d; --red-glow: rgba(248,113,113,.10);
+  --amber: #fbbf24; --amber-dim: #78350f; --amber-glow: rgba(251,191,36,.10);
+  --blue: #60a5fa; --blue-glow: rgba(96,165,250,.10);
+  --r: 10px; --r-lg: 14px;
+}
+body {
+  font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text);
+  min-height: 100vh; padding-bottom: 60px;
+  background-image: linear-gradient(rgba(163,230,53,.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(163,230,53,.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* LOGIN */
+.login-wrap {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.login-box {
+  width: 100%; max-width: 380px;
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: 20px; padding: 40px 32px;
+  box-shadow: 0 24px 64px rgba(0,0,0,.6);
+}
+.login-icon {
+  width: 56px; height: 56px; background: var(--lime); border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; margin: 0 auto 20px;
+  box-shadow: 0 0 30px rgba(163,230,53,.35);
+}
+.login-title {
+  font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800;
+  text-align: center; margin-bottom: 6px;
+}
+.login-sub { font-size: .82rem; color: var(--text-dim); text-align: center; margin-bottom: 28px; }
+.login-box input {
+  width: 100%; padding: 12px 14px; background: var(--surface2);
+  border: 1px solid var(--border2); border-radius: 10px;
+  color: var(--text); font-family: 'DM Sans', sans-serif; font-size: .95rem;
+  margin-bottom: 12px; transition: all .15s;
+}
+.login-box input:focus { outline: none; border-color: var(--lime); box-shadow: 0 0 0 3px var(--lime-glow); }
+.btn-login {
+  width: 100%; padding: 13px; background: var(--lime); color: var(--bg);
+  border: none; border-radius: 10px; font-family: 'Syne', sans-serif;
+  font-size: .95rem; font-weight: 800; cursor: pointer; transition: all .15s;
+  box-shadow: 0 0 20px rgba(163,230,53,.2);
+}
+.btn-login:hover { background: #bef264; box-shadow: 0 0 30px rgba(163,230,53,.35); }
+.login-err { font-size: .8rem; color: var(--red); text-align: center; margin-top: 10px; display: none; }
+
+/* MAIN PANEL */
+.main { display: none; max-width: 860px; margin: 0 auto; padding: 24px 16px; }
+
+/* HEADER */
+.panel-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 24px; background: rgba(10,14,20,.9);
+  backdrop-filter: blur(20px); border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 50; margin: 0 -16px 24px;
+}
+.hdr-brand { display: flex; align-items: center; gap: 12px; }
+.hdr-icon {
+  width: 34px; height: 34px; background: var(--lime); border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; font-size: 1rem;
+  box-shadow: 0 0 16px rgba(163,230,53,.3);
+}
+.hdr-title { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 800; }
+.hdr-role { font-size: .68rem; color: var(--text-dim); letter-spacing: 1.5px; text-transform: uppercase; }
+.btn-logout {
+  padding: 7px 14px; background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 8px; color: var(--text-mid); font-family: 'DM Sans', sans-serif;
+  font-size: .8rem; cursor: pointer; transition: all .15s;
+}
+.btn-logout:hover { border-color: var(--red-dim); color: var(--red); }
+
+/* STATS */
+.stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 24px; }
+.scard {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 18px;
+}
+.scard-lbl { font-size: .65rem; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px; }
+.scard-val { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800; }
+
+/* CREATE TEAM */
+.create-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 24px; margin-bottom: 24px;
+}
+.create-title {
+  font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; margin-bottom: 18px;
+  display: flex; align-items: center; gap: 8px;
+}
+.create-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.create-row input {
+  flex: 1; min-width: 200px; padding: 11px 14px;
+  background: var(--surface2); border: 1px solid var(--border2); border-radius: 10px;
+  color: var(--text); font-family: 'DM Sans', sans-serif; font-size: .9rem; transition: all .15s;
+}
+.create-row input:focus { outline: none; border-color: var(--lime); box-shadow: 0 0 0 3px var(--lime-glow); }
+.btn-create {
+  padding: 11px 22px; background: var(--lime); color: var(--bg);
+  border: none; border-radius: 10px; font-family: 'Syne', sans-serif;
+  font-size: .88rem; font-weight: 800; cursor: pointer; white-space: nowrap;
+  transition: all .15s; box-shadow: 0 0 16px rgba(163,230,53,.2);
+}
+.btn-create:hover { background: #bef264; }
+.btn-create:disabled { opacity: .5; cursor: not-allowed; }
+
+/* RESULT BOX */
+.result-box {
+  display: none; margin-top: 18px; padding: 18px;
+  background: var(--surface2); border: 1px solid var(--lime-dim);
+  border-radius: var(--r); animation: fadeUp .2s ease;
+}
+.result-title {
+  font-family: 'Syne', sans-serif; font-size: .82rem; font-weight: 700;
+  color: var(--lime); margin-bottom: 14px; display: flex; align-items: center; gap: 6px;
+}
+.link-row { margin-bottom: 10px; }
+.link-lbl { font-size: .7rem; color: var(--text-dim); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; }
+.link-val {
+  font-family: 'JetBrains Mono', monospace; font-size: .75rem; color: var(--blue);
+  background: var(--surface); border: 1px solid var(--border2); border-radius: 7px;
+  padding: 8px 12px; word-break: break-all; display: flex; align-items: center; gap: 8px;
+}
+.btn-copy-link {
+  flex-shrink: 0; padding: 4px 10px; background: var(--surface3);
+  border: 1px solid var(--border2); border-radius: 5px;
+  color: var(--text-mid); font-size: .72rem; cursor: pointer; transition: all .13s;
+  font-family: 'DM Sans', sans-serif; font-weight: 600;
+}
+.btn-copy-link:hover { border-color: var(--lime-dim); color: var(--lime); }
+
+/* TEAM LIST */
+.teams-title {
+  font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700;
+  margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+}
+.team-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
+  margin-bottom: 10px; overflow: hidden; transition: border-color .2s;
+}
+.team-card:hover { border-color: var(--border2); }
+.team-top {
+  display: flex; align-items: center; padding: 16px 20px; gap: 14px;
+  cursor: pointer;
+}
+.team-num {
+  width: 40px; height: 40px; border-radius: 10px; background: var(--surface2);
+  border: 1px solid var(--border2); font-family: 'Syne', sans-serif;
+  font-size: .85rem; font-weight: 800; color: var(--lime);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.team-info { flex: 1; }
+.team-name { font-size: .95rem; font-weight: 700; }
+.team-id { font-family: 'JetBrains Mono', monospace; font-size: .68rem; color: var(--text-dim); margin-top: 2px; }
+.team-status {
+  padding: 5px 12px; border-radius: 20px; font-size: .73rem; font-weight: 700; border: 1px solid;
+}
+.ts-active { background: var(--lime-glow); border-color: var(--lime-dim); color: var(--lime); }
+.ts-inactive { background: var(--red-glow); border-color: var(--red-dim); color: var(--red); }
+
+.team-detail {
+  display: none; padding: 0 20px 18px; border-top: 1px solid var(--border);
+}
+.team-detail.open { display: block; }
+.team-detail-inner { padding-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+.detail-link-lbl { font-size: .68rem; color: var(--text-dim); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+.detail-link-val {
+  font-family: 'JetBrains Mono', monospace; font-size: .72rem; color: var(--blue);
+  background: var(--surface2); border: 1px solid var(--border2); border-radius: 6px;
+  padding: 7px 10px; word-break: break-all; cursor: pointer; transition: all .13s;
+}
+.detail-link-val:hover { border-color: var(--blue); }
+.team-actions { display: flex; gap: 8px; margin-top: 4px; }
+.btn-toggle {
+  padding: 8px 16px; border-radius: 8px; font-family: 'DM Sans', sans-serif;
+  font-size: .82rem; font-weight: 700; cursor: pointer; border: 1px solid; transition: all .15s;
+}
+.btn-toggle-off { background: var(--red-glow); border-color: var(--red-dim); color: var(--red); }
+.btn-toggle-off:hover { background: rgba(248,113,113,.2); }
+.btn-toggle-on  { background: var(--lime-glow); border-color: var(--lime-dim); color: var(--lime); }
+.btn-toggle-on:hover  { background: rgba(163,230,53,.2); }
+.btn-copy-wa {
+  padding: 8px 16px; border-radius: 8px; font-family: 'DM Sans', sans-serif;
+  font-size: .82rem; font-weight: 700; cursor: pointer;
+  background: var(--blue-glow); border: 1px solid #1e3a5f; color: var(--blue);
+  transition: all .15s;
+}
+.btn-copy-wa:hover { background: rgba(96,165,250,.2); }
+
+/* MISC */
+.sec-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.sec-line { flex: 1; height: 1px; background: linear-gradient(90deg, var(--border2), transparent); }
+.loading { text-align: center; padding: 40px; color: var(--text-dim); font-size: .9rem; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border2); border-top-color: var(--lime); border-radius: 50%; animation: spin .6s linear infinite; }
+
+/* TOAST */
+#toast {
+  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(12px);
+  background: var(--surface); border: 1px solid var(--border2); color: var(--text);
+  padding: 11px 20px; border-radius: 30px; font-size: .84rem; font-weight: 500;
+  box-shadow: 0 8px 32px rgba(0,0,0,.6); opacity: 0;
+  transition: opacity .22s, transform .22s; pointer-events: none; z-index: 999;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+input[type="password"] { -webkit-appearance: none; }
+::placeholder { color: var(--text-dim); }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="login-wrap">
+  <div class="login-box">
+    <div class="login-icon">🛡️</div>
+    <div class="login-title">FisioTrack Admin</div>
+    <div class="login-sub">Panel de gestión de equipos</div>
+    <input type="password" id="admin-pass" placeholder="Contraseña de administrador"
+      onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn-login" onclick="doLogin()">Acceder</button>
+    <div class="login-err" id="login-err">Contraseña incorrecta</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main" id="main-panel">
+  <div class="panel-hdr">
+    <div class="hdr-brand">
+      <div class="hdr-icon">🛡️</div>
+      <div>
+        <div class="hdr-title">FisioTrack Admin</div>
+        <div class="hdr-role">Panel de administración</div>
+      </div>
+    </div>
+    <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="scard">
+      <div class="scard-lbl">Total equipos</div>
+      <div class="scard-val" id="st-total" style="color:var(--text)">—</div>
+    </div>
+    <div class="scard">
+      <div class="scard-lbl">Activos</div>
+      <div class="scard-val" id="st-active" style="color:var(--lime)">—</div>
+    </div>
+    <div class="scard">
+      <div class="scard-lbl">Inactivos</div>
+      <div class="scard-val" id="st-inactive" style="color:var(--red)">—</div>
+    </div>
+  </div>
+
+  <!-- Create team -->
+  <div class="create-card">
+    <div class="create-title">➕ Crear nuevo equipo</div>
+    <div class="create-row">
+      <input type="text" id="team-name-inp" placeholder="Nombre del equipo (ej. RC Deportivo Sub-23)"
+        onkeydown="if(event.key==='Enter')createTeam()">
+      <button class="btn-create" id="btn-create" onclick="createTeam()">Crear equipo</button>
+    </div>
+    <div class="result-box" id="result-box">
+      <div class="result-title">✅ Equipo creado correctamente</div>
+      <div class="link-row">
+        <div class="link-lbl">🔗 Link para JUGADORES — enviar por WhatsApp</div>
+        <div class="link-val"><span id="r-player-url" style="flex:1"></span>
+          <button class="btn-copy-link" onclick="copyText(document.getElementById('r-player-url').textContent,'Link jugador copiado')">Copiar</button>
+        </div>
+      </div>
+      <div class="link-row">
+        <div class="link-lbl">🛡️ Link para STAFF TÉCNICO</div>
+        <div class="link-val"><span id="r-staff-url" style="flex:1"></span>
+          <button class="btn-copy-link" onclick="copyText(document.getElementById('r-staff-url').textContent,'Link staff copiado')">Copiar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Teams list -->
+  <div class="sec-head">
+    <div style="font-family:'Syne',sans-serif;font-size:.95rem;font-weight:700">Equipos registrados</div>
+    <div class="sec-line"></div>
+    <button onclick="loadTeams()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:.8rem;padding:4px 8px;">↻ Actualizar</button>
+  </div>
+  <div id="teams-list"><div class="loading"><span class="spinner"></span></div></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxPBKNvOhqXCK1Vz7Pj0rJFLofNyIZluJmJWzeAYVrVt164TYWtmlJTN0-ap-QykPw/exec';
+const BASE_URL   = window.location.href.replace('admin.html','');
+let adminPass = '';
+let teams = [];
+
+async function doLogin() {
+  const pass = document.getElementById('admin-pass').value;
+  if(!pass) return;
+  const btn = document.querySelector('.btn-login');
+  btn.textContent = '...'; btn.disabled = true;
+  try {
+    const r = await api({action:'admin_login', password: pass});
+    if(r.ok) {
+      adminPass = pass;
+      document.getElementById('login-wrap').style.display = 'none';
+      document.getElementById('main-panel').style.display = 'block';
+      loadTeams();
+    } else {
+      document.getElementById('login-err').style.display = 'block';
+    }
+  } catch(e) {
+    document.getElementById('login-err').style.display = 'block';
+    document.getElementById('login-err').textContent = 'Error de conexión';
+  }
+  btn.textContent = 'Acceder'; btn.disabled = false;
+}
+
+async function loadTeams() {
+  document.getElementById('teams-list').innerHTML = '<div class="loading"><span class="spinner"></span></div>';
+  try {
+    const r = await api({action:'list_teams', adminPassword: adminPass});
+    if(r.ok) {
+      teams = r.teams;
+      renderTeams();
+      document.getElementById('st-total').textContent   = teams.length;
+      document.getElementById('st-active').textContent  = teams.filter(t=>t.active).length;
+      document.getElementById('st-inactive').textContent= teams.filter(t=>!t.active).length;
+    }
+  } catch(e) { document.getElementById('teams-list').innerHTML = '<div class="loading">Error al cargar equipos</div>'; }
+}
+
+async function createTeam() {
+  const name = document.getElementById('team-name-inp').value.trim();
+  if(!name) { toast('⚠️ Escribe el nombre del equipo'); return; }
+  const btn = document.getElementById('btn-create');
+  btn.textContent = 'Creando...'; btn.disabled = true;
+  try {
+    const r = await api({action:'create_team', adminPassword: adminPass, teamName: name});
+    if(r.ok) {
+      const playerUrl = BASE_URL + 'jugador.html' + r.playerUrl;
+      const staffUrl  = BASE_URL + 'staff.html'   + r.staffUrl;
+      document.getElementById('r-player-url').textContent = playerUrl;
+      document.getElementById('r-staff-url').textContent  = staffUrl;
+      document.getElementById('result-box').style.display = 'block';
+      document.getElementById('team-name-inp').value = '';
+      toast('✅ Equipo "' + name + '" creado');
+      loadTeams();
+    } else { toast('❌ ' + r.error); }
+  } catch(e) { toast('❌ Error de conexión'); }
+  btn.textContent = 'Crear equipo'; btn.disabled = false;
+}
+
+function renderTeams() {
+  const list = document.getElementById('teams-list');
+  if(!teams.length) { list.innerHTML = '<div class="loading">No hay equipos registrados aún</div>'; return; }
+  list.innerHTML = teams.map((t,i) => {
+    const playerUrl = BASE_URL + 'jugador.html?team=' + t.teamId + '&key=' + t.key;
+    const staffUrl  = BASE_URL + 'staff.html?team='   + t.teamId + '&key=' + t.key + '&role=staff';
+    const activeClass = t.active ? 'ts-active' : 'ts-inactive';
+    const activeText  = t.active ? 'Activo' : 'Inactivo';
+    return `
+    <div class="team-card">
+      <div class="team-top" onclick="toggleDetail('td-${i}')">
+        <div class="team-num">${i+1}</div>
+        <div class="team-info">
+          <div class="team-name">${t.name}</div>
+          <div class="team-id">${t.teamId}</div>
+        </div>
+        <div class="team-status ${activeClass}">${activeText}</div>
+      </div>
+      <div class="team-detail" id="td-${i}">
+        <div class="team-detail-inner">
+          <div>
+            <div class="detail-link-lbl">Link Jugadores</div>
+            <div class="detail-link-val" onclick="copyText('${playerUrl}','Link jugador copiado')">${playerUrl}</div>
+          </div>
+          <div>
+            <div class="detail-link-lbl">Link Staff</div>
+            <div class="detail-link-val" onclick="copyText('${staffUrl}','Link staff copiado')">${staffUrl}</div>
+          </div>
+          <div class="team-actions">
+            <button class="btn-copy-wa" onclick="copyWA('${playerUrl}','${t.name}')">📱 Copiar mensaje WhatsApp</button>
+            ${t.active
+              ? `<button class="btn-toggle btn-toggle-off" onclick="toggleTeam('${t.teamId}')">🔴 Desactivar equipo</button>`
+              : `<button class="btn-toggle btn-toggle-on"  onclick="toggleTeam('${t.teamId}')">🟢 Activar equipo</button>`}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleDetail(id) {
+  document.querySelectorAll('.team-detail').forEach(d => { if(d.id!==id) d.classList.remove('open'); });
+  document.getElementById(id).classList.toggle('open');
+}
+
+async function toggleTeam(teamId) {
+  try {
+    const r = await api({action:'toggle_team', adminPassword: adminPass, teamId});
+    if(r.ok) { toast(r.active ? '✅ Equipo activado' : '⛔ Equipo desactivado'); loadTeams(); }
+    else toast('❌ ' + r.error);
+  } catch(e) { toast('❌ Error de conexión'); }
+}
+
+function copyWA(url, name) {
+  const msg = `⚽ *FisioTrack — ${name}*\n\nHola equipo 👋\n\nAquí tenéis el enlace para vuestro formulario de seguimiento físico diario. Rellenadlo cada día antes del entrenamiento o partido:\n\n${url}\n\n📌 Guardad este enlace en vuestro móvil.`;
+  copyText(msg, '📱 Mensaje WhatsApp copiado');
+}
+
+function logout() {
+  adminPass = '';
+  document.getElementById('login-wrap').style.display = 'flex';
+  document.getElementById('main-panel').style.display = 'none';
+  document.getElementById('admin-pass').value = '';
+}
+
+async function api(body) {
+  const r = await fetch(SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify(body)
+  });
+  return r.json();
+}
+
+function copyText(text, msg) {
+  navigator.clipboard.writeText(text)
+    .then(()=>toast(msg||'✅ Copiado'))
+    .catch(()=>{ const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast(msg||'✅ Copiado'); });
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3200);
+}
+
+document.getElementById('admin-pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+</script>
+</body>
+</html>

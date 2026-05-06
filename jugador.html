@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>FisioTrack — Jugador</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --bg: #0a0e14; --surface: #12181f; --surface2: #181f28; --surface3: #1e2733;
+  --border: #252d38; --border2: #2f3d4f;
+  --lime: #a3e635; --lime-dim: #4d6e19; --lime-glow: rgba(163,230,53,.10); --lime-glow2: rgba(163,230,53,.05);
+  --text: #dde5ef; --text-mid: #8a9ab0; --text-dim: #3d4f63;
+  --red: #f87171; --red-dim: #7f1d1d; --red-glow: rgba(248,113,113,.10);
+  --amber: #fbbf24; --amber-dim: #78350f; --amber-glow: rgba(251,191,36,.10);
+  --blue: #60a5fa; --blue-glow: rgba(96,165,250,.10);
+  --r: 10px; --r-lg: 14px;
+}
+body {
+  font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text);
+  min-height: 100vh; padding-bottom: 80px;
+  background-image: linear-gradient(rgba(163,230,53,.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(163,230,53,.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* GATE */
+.gate {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.gate-box {
+  width: 100%; max-width: 360px; background: var(--surface);
+  border: 1px solid var(--border2); border-radius: 20px; padding: 36px 28px;
+  box-shadow: 0 24px 64px rgba(0,0,0,.6);
+}
+.gate-icon { width: 52px; height: 52px; background: var(--lime); border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin: 0 auto 18px; box-shadow: 0 0 28px rgba(163,230,53,.3); }
+.gate-title { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 800; text-align: center; margin-bottom: 4px; }
+.gate-sub { font-size: .8rem; color: var(--text-dim); text-align: center; margin-bottom: 24px; }
+.gate-input {
+  width: 100%; padding: 11px 14px; background: var(--surface2);
+  border: 1px solid var(--border2); border-radius: 10px;
+  color: var(--text); font-family: 'DM Sans', sans-serif; font-size: .92rem;
+  margin-bottom: 10px; transition: all .15s; -webkit-appearance: none;
+}
+.gate-input:focus { outline: none; border-color: var(--lime); box-shadow: 0 0 0 3px var(--lime-glow); }
+.gate-err { font-size: .78rem; color: var(--red); text-align: center; margin-top: 6px; display: none; }
+.btn-enter {
+  width: 100%; padding: 12px; background: var(--lime); color: var(--bg);
+  border: none; border-radius: 10px; font-family: 'Syne', sans-serif;
+  font-size: .92rem; font-weight: 800; cursor: pointer; transition: all .15s;
+  box-shadow: 0 0 18px rgba(163,230,53,.2); margin-top: 4px;
+}
+.btn-enter:hover { background: #bef264; }
+
+/* HEADER */
+.header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(10,14,20,.9); backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border);
+}
+.header::after {
+  content:''; position:absolute; bottom:0; left:0; right:0; height:1px;
+  background: linear-gradient(90deg, transparent, var(--lime-dim), transparent);
+}
+.hdr-inner { max-width: 520px; margin: 0 auto; padding: 14px 18px 0; }
+.hdr-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-mark { width: 34px; height: 34px; background: var(--lime); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; box-shadow: 0 0 14px rgba(163,230,53,.3); }
+.brand-name { font-family: 'Syne', sans-serif; font-size: .95rem; font-weight: 800; line-height: 1; }
+.brand-team { font-size: .68rem; color: var(--text-dim); letter-spacing: .5px; }
+.team-chip {
+  font-family: 'JetBrains Mono', monospace; font-size: .68rem;
+  padding: 4px 10px; border-radius: 20px;
+  background: var(--lime-glow); border: 1px solid var(--lime-dim); color: var(--lime);
+}
+
+/* CONTENT */
+.content { max-width: 520px; margin: 0 auto; padding: 20px 16px; }
+
+/* SECTION */
+.sec-head { display: flex; align-items: center; gap: 12px; margin: 24px 0 11px; }
+.sec-head:first-child { margin-top: 0; }
+.sec-title { font-family: 'Syne', sans-serif; font-size: .68rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); white-space: nowrap; }
+.sec-line { flex: 1; height: 1px; background: linear-gradient(90deg, var(--border2), transparent); }
+
+/* CARD */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; margin-bottom: 12px; transition: border-color .2s; }
+.card:hover { border-color: var(--border2); }
+
+/* FIELD ROW */
+.frow { display: flex; align-items: center; padding: 13px 18px; gap: 14px; border-bottom: 1px solid var(--border); transition: background .15s; }
+.frow:last-child { border-bottom: none; }
+.frow:hover { background: rgba(255,255,255,.015); }
+.flabel { flex: 1; font-size: .9rem; font-weight: 500; color: var(--text); }
+.fhint { display: block; font-size: .72rem; color: var(--text-dim); font-weight: 400; margin-top: 2px; }
+.fcol { padding: 14px 18px; border-bottom: 1px solid var(--border); }
+.fcol:last-child { border-bottom: none; }
+
+/* INPUTS */
+input[type="text"], input[type="date"], select {
+  font-family: 'DM Sans', sans-serif; background: var(--surface2);
+  border: 1px solid var(--border2); border-radius: 8px; color: var(--text);
+  font-size: .88rem; transition: all .15s; -webkit-appearance: none; appearance: none; padding: 9px 12px;
+}
+input[type="text"]:focus, input[type="date"]:focus, select:focus {
+  outline: none; border-color: var(--lime); box-shadow: 0 0 0 3px var(--lime-glow); background: var(--surface3);
+}
+input[type="date"] { width: 148px; color-scheme: dark; }
+input[type="text"] { min-width: 150px; }
+select { padding: 9px 32px 9px 12px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%233d4f63' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; cursor: pointer; }
+textarea { width: 100%; padding: 11px 13px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: .88rem; resize: vertical; min-height: 80px; line-height: 1.55; margin-top: 8px; transition: all .15s; }
+textarea:focus { outline: none; border-color: var(--lime); box-shadow: 0 0 0 3px var(--lime-glow); background: var(--surface3); }
+::placeholder { color: var(--text-dim); }
+
+/* SCALE DOTS */
+.scale-row { display: flex; align-items: center; padding: 13px 18px; border-bottom: 1px solid var(--border); gap: 12px; }
+.scale-row:last-child { border-bottom: none; }
+.scale-left { flex: 1; }
+.dots { display: flex; gap: 6px; }
+.dot {
+  width: 40px; height: 40px; border-radius: 9px;
+  border: 1px solid var(--border2); background: var(--surface2);
+  font-family: 'JetBrains Mono', monospace; font-size: .9rem; font-weight: 500;
+  color: var(--text-dim); cursor: pointer; display: flex; align-items: center;
+  justify-content: center; transition: all .13s;
+}
+.dot:hover { border-color: var(--lime-dim); color: var(--lime); }
+.d1 { background:rgba(248,113,113,.12); border-color:var(--red);    color:var(--red); }
+.d2 { background:rgba(251,146,60,.12);  border-color:#fb923c;       color:#fb923c; }
+.d3 { background:rgba(251,191,36,.12);  border-color:var(--amber);  color:var(--amber); }
+.d4 { background:var(--lime-glow);      border-color:var(--lime);   color:var(--lime); }
+.d5 { background:rgba(52,211,153,.12);  border-color:#34d399;       color:#34d399; }
+
+/* RPE 1-10 */
+.rpe-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 6px; margin-top: 14px; }
+.rpe-btn {
+  height: 42px; border-radius: 8px; border: 1px solid var(--border2); background: var(--surface2);
+  font-family: 'JetBrains Mono', monospace; font-size: .88rem; font-weight: 500;
+  color: var(--text-dim); cursor: pointer; transition: all .13s;
+  display: flex; align-items: center; justify-content: center;
+}
+.rpe-btn:hover { border-color: var(--lime-dim); color: var(--lime); }
+.r1,.r2  { background:rgba(52,211,153,.1);  border-color:#34d399; color:#34d399; }
+.r3,.r4  { background:var(--lime-glow);      border-color:var(--lime); color:var(--lime); }
+.r5,.r6  { background:rgba(251,191,36,.1);  border-color:var(--amber); color:var(--amber); }
+.r7,.r8  { background:rgba(251,146,60,.1);  border-color:#fb923c; color:#fb923c; }
+.r9,.r10 { background:var(--red-glow);       border-color:var(--red); color:var(--red); }
+.rpe-labels { display: flex; justify-content: space-between; margin-top: 7px; }
+.rpe-labels span { font-size: .65rem; color: var(--text-dim); }
+
+/* TOTAL CHIP */
+.total-chip {
+  margin: 0 18px 16px; background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: var(--r); padding: 13px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  transition: border-color .2s;
+}
+.total-chip.good { border-color: var(--lime-dim); background: var(--lime-glow2); }
+.total-chip.warn { border-color: var(--amber-dim); background: rgba(251,191,36,.05); }
+.total-chip.bad  { border-color: var(--red-dim);   background: var(--red-glow); }
+.tc-left .tc-lbl { font-size: .78rem; font-weight: 600; color: var(--text-mid); }
+.tc-badge { font-size: .7rem; font-weight: 700; padding: 3px 9px; border-radius: 20px; margin-top: 4px; display: inline-block; }
+.tc-badge.good { background: var(--lime-glow); border: 1px solid var(--lime-dim); color: var(--lime); }
+.tc-badge.warn { background: var(--amber-glow); border: 1px solid var(--amber-dim); color: var(--amber); }
+.tc-badge.bad  { background: var(--red-glow); border: 1px solid var(--red-dim); color: var(--red); }
+.tc-val { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+/* TOGGLE */
+.toggle-row { display: flex; align-items: center; padding: 13px 18px; border-bottom: 1px solid var(--border); gap: 12px; cursor: pointer; transition: background .15s; }
+.toggle-row:hover { background: rgba(255,255,255,.015); }
+.toggle-row:last-child { border-bottom: none; }
+.sw { width: 44px; height: 26px; background: var(--surface3); border: 1px solid var(--border2); border-radius: 13px; position: relative; transition: all .2s; flex-shrink: 0; }
+.sw::after { content:''; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#fff; transition:transform .2s; box-shadow:0 1px 3px rgba(0,0,0,.4); }
+.sw.on { background: var(--lime); border-color: var(--lime-dim); }
+.sw.on::after { transform: translateX(18px); }
+.lesion-expand { display: none; padding: 0 18px 14px; }
+.lesion-expand.open { display: block; }
+
+/* SUBMIT */
+.btn-submit {
+  width: 100%; padding: 16px; border: none; border-radius: var(--r-lg);
+  background: linear-gradient(135deg, var(--lime), #86efac);
+  color: var(--bg); font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 800;
+  cursor: pointer; letter-spacing: .2px; transition: all .2s; margin-top: 8px;
+  box-shadow: 0 4px 20px rgba(163,230,53,.2);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-submit:hover { box-shadow: 0 8px 30px rgba(163,230,53,.35); transform: translateY(-1px); }
+.btn-submit:active { transform: scale(.98); }
+.btn-submit:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.btn-ghost {
+  width: 100%; padding: 12px; border: 1px solid var(--border2); border-radius: var(--r-lg);
+  background: transparent; color: var(--text-dim); font-family: 'DM Sans', sans-serif;
+  font-size: .9rem; cursor: pointer; transition: all .15s; margin-top: 8px;
+}
+.btn-ghost:hover { border-color: var(--red-dim); color: var(--red); }
+
+/* SPINNER */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(10,14,20,.3); border-top-color: var(--bg); border-radius: 50%; animation: spin .6s linear infinite; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+/* TOAST */
+#toast {
+  position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(14px);
+  background: var(--surface); border: 1px solid var(--border2); color: var(--text);
+  padding: 12px 22px; border-radius: 30px; font-size: .85rem; font-weight: 500;
+  box-shadow: 0 8px 32px rgba(0,0,0,.6); opacity: 0;
+  transition: opacity .22s, transform .22s; pointer-events: none; z-index: 999; white-space: nowrap;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- GATE — only shown if no credentials in URL -->
+<div class="gate" id="gate" style="display:none">
+  <div class="gate-box">
+    <div class="gate-icon">⚽</div>
+    <div class="gate-title">FisioTrack</div>
+    <div class="gate-sub">Formulario del Jugador</div>
+    <input class="gate-input" type="text" id="g-nombre" placeholder="Tu nombre completo">
+    <div class="gate-err" id="gate-err">Enlace inválido. Pide el link a tu staff.</div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div class="header" id="header" style="display:none">
+  <div class="hdr-inner">
+    <div class="hdr-top">
+      <div class="brand">
+        <div class="brand-mark">⚽</div>
+        <div>
+          <div class="brand-name">FisioTrack</div>
+          <div class="brand-team" id="team-name-hdr">—</div>
+        </div>
+      </div>
+      <div class="team-chip" id="hdr-date"></div>
+    </div>
+  </div>
+</div>
+
+<!-- FORM -->
+<div class="content" id="form-content" style="display:none; animation: fadeUp .25s ease">
+
+  <div class="sec-head"><div class="sec-title">Identificación</div><div class="sec-line"></div></div>
+  <div class="card">
+    <div class="frow">
+      <div class="flabel">Tu nombre</div>
+      <input type="text" id="j-nombre" placeholder="Nombre completo">
+    </div>
+    <div class="frow">
+      <div class="flabel">Fecha</div>
+      <input type="date" id="j-fecha">
+    </div>
+    <div class="frow">
+      <div class="flabel">Sesión de hoy <span class="fhint">¿Hay entrenamiento o partido?</span></div>
+      <select id="j-tipo">
+        <option value="">— Selecciona —</option>
+        <option value="E">Entrenamiento</option>
+        <option value="P">Partido</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="sec-head"><div class="sec-title">Cómo estás hoy — 1 muy mal · 5 muy bien</div><div class="sec-line"></div></div>
+  <div class="card">
+    <div class="scale-row">
+      <div class="scale-left">
+        <div class="flabel">🌙 Sueño</div>
+        <span class="fhint">¿Cómo dormiste anoche?</span>
+      </div>
+      <div class="dots" id="sc-sueno">
+        <div class="dot" onclick="pickDot('sc-sueno','j-sueno',1)">1</div>
+        <div class="dot" onclick="pickDot('sc-sueno','j-sueno',2)">2</div>
+        <div class="dot" onclick="pickDot('sc-sueno','j-sueno',3)">3</div>
+        <div class="dot" onclick="pickDot('sc-sueno','j-sueno',4)">4</div>
+        <div class="dot" onclick="pickDot('sc-sueno','j-sueno',5)">5</div>
+      </div>
+      <input type="hidden" id="j-sueno">
+    </div>
+    <div class="scale-row">
+      <div class="scale-left">
+        <div class="flabel">⚡ Fatiga</div>
+        <span class="fhint">¿Cómo te sientes de cansado?</span>
+      </div>
+      <div class="dots" id="sc-fatiga">
+        <div class="dot" onclick="pickDot('sc-fatiga','j-fatiga',1)">1</div>
+        <div class="dot" onclick="pickDot('sc-fatiga','j-fatiga',2)">2</div>
+        <div class="dot" onclick="pickDot('sc-fatiga','j-fatiga',3)">3</div>
+        <div class="dot" onclick="pickDot('sc-fatiga','j-fatiga',4)">4</div>
+        <div class="dot" onclick="pickDot('sc-fatiga','j-fatiga',5)">5</div>
+      </div>
+      <input type="hidden" id="j-fatiga">
+    </div>
+    <div class="scale-row">
+      <div class="scale-left">
+        <div class="flabel">💪 Dolor muscular</div>
+        <span class="fhint">¿Tienes agujetas o molestias?</span>
+      </div>
+      <div class="dots" id="sc-dolor">
+        <div class="dot" onclick="pickDot('sc-dolor','j-dolor',1)">1</div>
+        <div class="dot" onclick="pickDot('sc-dolor','j-dolor',2)">2</div>
+        <div class="dot" onclick="pickDot('sc-dolor','j-dolor',3)">3</div>
+        <div class="dot" onclick="pickDot('sc-dolor','j-dolor',4)">4</div>
+        <div class="dot" onclick="pickDot('sc-dolor','j-dolor',5)">5</div>
+      </div>
+      <input type="hidden" id="j-dolor">
+    </div>
+    <div class="total-chip" id="total-chip" style="display:none">
+      <div class="tc-left">
+        <div class="tc-lbl">Bienestar total</div>
+        <span class="tc-badge" id="tc-badge"></span>
+      </div>
+      <div class="tc-val" id="tc-val">—</div>
+    </div>
+  </div>
+
+  <div class="sec-head"><div class="sec-title">Esfuerzo percibido — rellenar DESPUÉS de la sesión</div><div class="sec-line"></div></div>
+  <div class="card">
+    <div class="fcol">
+      <div class="flabel">RPE — ¿Cómo de duro fue? <span class="fhint">1 = muy fácil · 5 = moderado · 10 = esfuerzo máximo</span></div>
+      <div class="rpe-grid" id="sc-rpe">
+        <div class="rpe-btn" onclick="pickRPE(1)">1</div>
+        <div class="rpe-btn" onclick="pickRPE(2)">2</div>
+        <div class="rpe-btn" onclick="pickRPE(3)">3</div>
+        <div class="rpe-btn" onclick="pickRPE(4)">4</div>
+        <div class="rpe-btn" onclick="pickRPE(5)">5</div>
+        <div class="rpe-btn" onclick="pickRPE(6)">6</div>
+        <div class="rpe-btn" onclick="pickRPE(7)">7</div>
+        <div class="rpe-btn" onclick="pickRPE(8)">8</div>
+        <div class="rpe-btn" onclick="pickRPE(9)">9</div>
+        <div class="rpe-btn" onclick="pickRPE(10)">10</div>
+      </div>
+      <div class="rpe-labels"><span>Muy fácil</span><span>Moderado</span><span>Máximo</span></div>
+      <input type="hidden" id="j-rpe">
+    </div>
+  </div>
+
+  <div class="sec-head"><div class="sec-title">Molestias o lesión</div><div class="sec-line"></div></div>
+  <div class="card">
+    <div class="toggle-row" onclick="toggleLesion()">
+      <div class="flabel">¿Tienes alguna molestia o lesión? <span class="fhint">Toca para indicarlo</span></div>
+      <div class="sw" id="lesion-sw"></div>
+      <input type="hidden" id="j-lesion-yn" value="N">
+    </div>
+    <div class="lesion-expand" id="lesion-expand">
+      <textarea id="j-lesion-txt" placeholder="Zona del cuerpo, cuándo apareció, cómo te afecta…"></textarea>
+    </div>
+  </div>
+
+  <div class="sec-head"><div class="sec-title">Comentario libre</div><div class="sec-line"></div></div>
+  <div class="card">
+    <div class="fcol">
+      <div class="flabel">¿Quieres añadir algo? <span class="fhint">Lo que quieras que sepa el staff</span></div>
+      <textarea id="j-comentario" placeholder="Escribe aquí lo que quieras…"></textarea>
+    </div>
+  </div>
+
+  <button class="btn-submit" id="btn-save" onclick="guardar()">
+    💾 Guardar datos
+  </button>
+  <button class="btn-ghost" onclick="limpiar()">Limpiar formulario</button>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxPBKNvOhqXCK1Vz7Pj0rJFLofNyIZluJmJWzeAYVrVt164TYWtmlJTN0-ap-QykPw/exec';
+const params = new URLSearchParams(window.location.search);
+const TEAM_ID  = params.get('team') || '';
+const TEAM_KEY = params.get('key')  || '';
+const hoy = new Date().toISOString().split('T')[0];
+
+// Init
+document.getElementById('j-fecha').value = hoy;
+document.getElementById('hdr-date').textContent =
+  new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'short'}).toUpperCase();
+
+// Validate credentials
+if (!TEAM_ID || !TEAM_KEY) {
+  document.getElementById('gate').style.display = 'flex';
+  document.getElementById('gate-err').style.display = 'block';
+} else {
+  // Load team name from localStorage cache
+  const cached = localStorage.getItem('ft_team_name_' + TEAM_ID);
+  document.getElementById('team-name-hdr').textContent = cached || 'Cargando…';
+  showForm();
+}
+
+function showForm() {
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('header').style.display = 'block';
+  document.getElementById('form-content').style.display = 'block';
+}
+
+// ── DOTS bienestar ──────────────────────────────────────
+function pickDot(groupId, hiddenId, val) {
+  const map = {1:'d1',2:'d2',3:'d3',4:'d4',5:'d5'};
+  document.getElementById(groupId).querySelectorAll('.dot').forEach((d,i)=>{
+    d.className='dot'; if(i+1===val) d.classList.add(map[val]);
+  });
+  document.getElementById(hiddenId).value = val;
+  calcBienestar();
+}
+
+function calcBienestar() {
+  const vals = ['j-sueno','j-fatiga','j-dolor'].map(id=>parseInt(document.getElementById(id).value)||0);
+  if(vals.some(v=>v===0)) { document.getElementById('total-chip').style.display='none'; return; }
+  const total = vals.reduce((a,b)=>a+b,0);
+  const chip  = document.getElementById('total-chip');
+  const badge = document.getElementById('tc-badge');
+  const tcval = document.getElementById('tc-val');
+  chip.style.display = 'flex';
+  tcval.textContent = total + ' / 15';
+  chip.className = 'total-chip';
+  badge.className = 'tc-badge';
+  if(total <= 7)       { chip.classList.add('bad');  badge.classList.add('bad');  badge.textContent='🔴 Avisa al staff'; }
+  else if(total <= 11) { chip.classList.add('warn'); badge.classList.add('warn'); badge.textContent='🟡 Estado normal'; }
+  else                 { chip.classList.add('good'); badge.classList.add('good'); badge.textContent='🟢 Buen estado'; }
+}
+
+// ── RPE ────────────────────────────────────────────────
+function pickRPE(val) {
+  const map = {1:'r1',2:'r2',3:'r3',4:'r4',5:'r5',6:'r6',7:'r7',8:'r8',9:'r9',10:'r10'};
+  document.getElementById('sc-rpe').querySelectorAll('.rpe-btn').forEach((b,i)=>{
+    b.className='rpe-btn'; if(i+1===val) b.classList.add(map[val]);
+  });
+  document.getElementById('j-rpe').value = val;
+}
+
+// ── LESION ─────────────────────────────────────────────
+function toggleLesion() {
+  const sw  = document.getElementById('lesion-sw');
+  const exp = document.getElementById('lesion-expand');
+  const hid = document.getElementById('j-lesion-yn');
+  const on  = sw.classList.contains('on');
+  sw.classList.toggle('on', !on);
+  exp.classList.toggle('open', !on);
+  hid.value = on ? 'N' : 'S';
+  if(!on) setTimeout(()=>document.getElementById('j-lesion-txt').focus(),100);
+}
+
+// ── GUARDAR ────────────────────────────────────────────
+async function guardar() {
+  const nombre = document.getElementById('j-nombre').value.trim();
+  const fecha  = document.getElementById('j-fecha').value;
+  const tipo   = document.getElementById('j-tipo').value;
+  const sueno  = document.getElementById('j-sueno').value;
+  const fatiga = document.getElementById('j-fatiga').value;
+  const dolor  = document.getElementById('j-dolor').value;
+  const rpe    = document.getElementById('j-rpe').value;
+
+  if(!nombre)              { toast('⚠️ Escribe tu nombre');               return; }
+  if(!tipo)                { toast('⚠️ Selecciona el tipo de sesión');     return; }
+  if(!sueno||!fatiga||!dolor) { toast('⚠️ Completa las 3 escalas de bienestar'); return; }
+  if(!rpe)                 { toast('⚠️ Indica tu RPE');                   return; }
+
+  const total = parseInt(sueno)+parseInt(fatiga)+parseInt(dolor);
+  const lesion = document.getElementById('j-lesion-yn').value;
+  const lesionTxt = document.getElementById('j-lesion-txt').value.trim();
+  const comentario = document.getElementById('j-comentario').value.trim();
+
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Guardando…';
+
+  try {
+    const r = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'save_data',
+        teamId: TEAM_ID,
+        teamKey: TEAM_KEY,
+        type: 'bienestar',
+        row: [fecha, nombre, tipo, sueno, fatiga, dolor, total, rpe, lesion, lesionTxt, comentario]
+      })
+    });
+    const data = await r.json();
+    if(data.ok) {
+      toast('✅ Datos guardados correctamente');
+      // Cache team name if returned
+      if(data.teamName) {
+        localStorage.setItem('ft_team_name_'+TEAM_ID, data.teamName);
+        document.getElementById('team-name-hdr').textContent = data.teamName;
+      }
+      setTimeout(limpiar, 1500);
+    } else {
+      toast('❌ ' + (data.error || 'Error al guardar'));
+    }
+  } catch(e) {
+    toast('❌ Sin conexión. Comprueba tu internet.');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '💾 Guardar datos';
+}
+
+// ── LIMPIAR ────────────────────────────────────────────
+function limpiar() {
+  document.getElementById('j-nombre').value = '';
+  document.getElementById('j-fecha').value  = hoy;
+  document.getElementById('j-tipo').value   = '';
+  ['j-sueno','j-fatiga','j-dolor','j-rpe'].forEach(id=>document.getElementById(id).value='');
+  document.querySelectorAll('.dot').forEach(d=>d.className='dot');
+  document.querySelectorAll('.rpe-btn').forEach(b=>b.className='rpe-btn');
+  document.getElementById('total-chip').style.display='none';
+  document.getElementById('lesion-sw').classList.remove('on');
+  document.getElementById('lesion-expand').classList.remove('open');
+  document.getElementById('j-lesion-yn').value='N';
+  document.getElementById('j-lesion-txt').value='';
+  document.getElementById('j-comentario').value='';
+}
+
+function toast(msg) {
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3200);
+}
+</script>
+</body>
+</html>
