@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FisioTrack — Analytics</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg:        #0a0e14;
+      --surface:   #12181f;
+      --surface2:  #1a2232;
+      --lime:      #a3e635;
+      --lime-dim:  #4d6e19;
+      --lime-glow: rgba(163,230,53,.12);
+      --text:      #dde5ef;
+      --text-dim:  #8899aa;
+      --red:       #f87171;
+      --amber:     #fbbf24;
+      --blue:      #60a5fa;
+      --green:     #4ade80;
+      --border:    #252d38;
+      --border2:   #2f3d4f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+
+    /* ── LOADING ── */
+    .loading-overlay {
+      position: fixed; inset: 0; background: var(--bg);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 999;
+    }
+    .spinner {
+      width: 48px; height: 48px; border: 3px solid var(--border);
+      border-top-color: var(--lime); border-radius: 50%;
+      animation: spin .8s linear infinite; margin-bottom: 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-family: 'JetBrains Mono', monospace; font-size: .8rem; color: var(--text-dim); }
+
+    /* ── HEADER ── */
+    .header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(10,14,20,.92); backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px; height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .header-brand { display: flex; align-items: center; gap: 12px; }
+    .header-mark {
+      width: 34px; height: 34px; border-radius: 8px;
+      background: var(--lime); display: flex; align-items: center; justify-content: center;
+      font-size: 18px; box-shadow: 0 0 16px rgba(163,230,53,.4);
+    }
+    .header-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; }
+    .header-sub { font-family: 'JetBrains Mono', monospace; font-size: .68rem; color: var(--text-dim); margin-top: 2px; }
+    .team-chip {
+      font-family: 'JetBrains Mono', monospace; font-size: .72rem;
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 4px 12px; border-radius: 20px; color: var(--lime);
+    }
+
+    /* ── LAYOUT ── */
+    .main { max-width: 1400px; margin: 0 auto; padding: 24px; }
+
+    .range-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+    .range-label { font-size: .8rem; color: var(--text-dim); }
+    .range-btn {
+      font-family: 'JetBrains Mono', monospace; font-size: .72rem;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text-dim); padding: 6px 14px; border-radius: 20px;
+      cursor: pointer; transition: all .2s;
+    }
+    .range-btn:hover { border-color: var(--lime); color: var(--lime); }
+    .range-btn.active { background: var(--lime-glow); border-color: var(--lime); color: var(--lime); }
+
+    /* ── KPI ROW ── */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .kpi-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px; transition: border-color .2s;
+    }
+    .kpi-card:hover { border-color: var(--border2); }
+    .kpi-label { font-size: .72rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+    .kpi-value { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 2rem; line-height: 1; }
+    .kpi-sub   { font-size: .73rem; color: var(--text-dim); margin-top: 5px; }
+    .kpi-value.good { color: var(--green); }
+    .kpi-value.warn { color: var(--amber); }
+    .kpi-value.bad  { color: var(--red);   }
+    .kpi-value.lime { color: var(--lime);  }
+
+    /* ── CARDS ── */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+    .card-header {
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .card-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: .9rem; }
+    .card-subtitle { font-size: .73rem; color: var(--text-dim); margin-top: 2px; }
+    .card-body { padding: 20px; }
+    .badge {
+      font-family: 'JetBrains Mono', monospace; font-size: .65rem;
+      padding: 3px 9px; border-radius: 10px; border: 1px solid;
+    }
+    .badge-lime  { color: var(--lime);  border-color: var(--lime-dim);            background: var(--lime-glow); }
+    .badge-red   { color: var(--red);   border-color: rgba(248,113,113,.3);        background: rgba(248,113,113,.08); }
+    .badge-amber { color: var(--amber); border-color: rgba(251,191,36,.3);         background: rgba(251,191,36,.08); }
+
+    /* ── GRID HELPERS ── */
+    .grid-heatmap { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 24px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    .full   { margin-bottom: 24px; }
+    .chart-wrap { position: relative; }
+
+    /* ── HEATMAP ── */
+    .heatmap-scroll { overflow-x: auto; padding-bottom: 4px; }
+    .heatmap { display: grid; gap: 3px; min-width: max-content; }
+    .hm-corner { }
+    .hm-date {
+      font-family: 'JetBrains Mono', monospace; font-size: .58rem; color: var(--text-dim);
+      text-align: center; white-space: nowrap;
+      height: 38px; display: flex; align-items: flex-end; justify-content: center;
+      transform: rotate(-45deg); transform-origin: center;
+    }
+    .hm-player {
+      font-size: .72rem; color: var(--text-dim); white-space: nowrap;
+      display: flex; align-items: center; padding-right: 8px;
+    }
+    .hm-cell {
+      width: 32px; height: 32px; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'JetBrains Mono', monospace; font-size: .63rem; font-weight: 500;
+      cursor: default; transition: transform .12s; position: relative;
+    }
+    .hm-cell:hover { transform: scale(1.2); z-index: 20; }
+    .hm-cell.good  { background: rgba(74,222,128,.18); color: var(--green);  border: 1px solid rgba(74,222,128,.35); }
+    .hm-cell.warn  { background: rgba(251,191,36,.18); color: var(--amber);  border: 1px solid rgba(251,191,36,.35); }
+    .hm-cell.bad   { background: rgba(248,113,113,.18); color: var(--red);   border: 1px solid rgba(248,113,113,.35); }
+    .hm-cell.empty { background: var(--surface2); color: var(--border2);     border: 1px solid var(--border); }
+    .hm-legend { display: flex; gap: 16px; margin-top: 14px; flex-wrap: wrap; }
+    .hm-leg-item { display: flex; align-items: center; gap: 6px; font-size: .72rem; color: var(--text-dim); }
+    .hm-leg-dot  { width: 12px; height: 12px; border-radius: 3px; }
+
+    /* ── PLAYER LIST ── */
+    .player-list { display: flex; flex-direction: column; gap: 0; }
+    .player-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+    }
+    .player-row:last-child { border-bottom: none; }
+    .player-name { font-size: .85rem; font-weight: 500; }
+    .player-dims { font-size: .68rem; color: var(--text-dim); margin-top: 2px; }
+    .injury-tag { font-size: .68rem; color: var(--red); margin-left: 6px; }
+    .score-pill {
+      font-family: 'JetBrains Mono', monospace; font-size: .75rem;
+      padding: 3px 10px; border-radius: 12px;
+    }
+    .score-pill.good  { background: rgba(74,222,128,.15); color: var(--green); }
+    .score-pill.warn  { background: rgba(251,191,36,.15);  color: var(--amber); }
+    .score-pill.bad   { background: rgba(248,113,113,.15); color: var(--red);   }
+    .score-pill.empty { background: var(--surface2);       color: var(--text-dim); }
+
+    /* ── RADAR PLAYER SELECTOR ── */
+    .player-selector { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+    .p-btn {
+      font-family: 'DM Sans', sans-serif; font-size: .75rem;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text-dim); padding: 4px 12px; border-radius: 20px;
+      cursor: pointer; transition: all .2s;
+    }
+    .p-btn:hover { border-color: var(--lime); color: var(--lime); }
+    .p-btn.active { background: var(--lime-glow); border-color: var(--lime); color: var(--lime); }
+
+    /* ── ACWR LEGEND ── */
+    .acwr-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 12px; font-size: .72rem; }
+    .acwr-zone { display: flex; align-items: center; gap: 5px; color: var(--text-dim); }
+    .acwr-dot  { width: 10px; height: 10px; border-radius: 50%; }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 36px 20px; color: var(--text-dim); text-align: center; gap: 10px;
+    }
+    .empty-icon { font-size: 2.2rem; opacity: .35; }
+    .empty-text { font-size: .82rem; line-height: 1.5; }
+
+    /* ── TOOLTIP ── */
+    #hm-tooltip {
+      position: fixed; background: var(--surface2); border: 1px solid var(--border2);
+      border-radius: 8px; padding: 10px 14px; font-size: .75rem;
+      pointer-events: none; z-index: 1000; display: none; min-width: 160px;
+    }
+    #hm-tooltip .tt-name { font-weight: 600; margin-bottom: 6px; }
+    #hm-tooltip .tt-row { color: var(--text-dim); margin-top: 3px; }
+    #hm-tooltip .tt-row span { color: var(--text); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1000px) {
+      .grid-heatmap { grid-template-columns: 1fr; }
+      .grid-2       { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .kpi-row { grid-template-columns: 1fr 1fr; }
+      .main    { padding: 14px; }
+      .header  { padding: 0 14px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="spinner"></div>
+  <div class="loading-text">Cargando datos del equipo...</div>
+</div>
+
+<!-- Tooltip heatmap -->
+<div id="hm-tooltip"></div>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-brand">
+    <div class="header-mark">📊</div>
+    <div>
+      <div class="header-title">FisioTrack Analytics</div>
+      <div class="header-sub" id="header-sub">Cargando...</div>
+    </div>
+  </div>
+  <span class="team-chip" id="team-chip">—</span>
+</header>
+
+<!-- Main -->
+<main class="main">
+
+  <!-- Date range -->
+  <div class="range-bar">
+    <span class="range-label">Período:</span>
+    <button class="range-btn" data-days="7"  onclick="setRange(7,this)">7 días</button>
+    <button class="range-btn active" data-days="14" onclick="setRange(14,this)">14 días</button>
+    <button class="range-btn" data-days="30" onclick="setRange(30,this)">30 días</button>
+    <button class="range-btn" data-days="90" onclick="setRange(90,this)">90 días</button>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-label">Bienestar equipo hoy</div>
+      <div class="kpi-value" id="kpi-bw">—</div>
+      <div class="kpi-sub" id="kpi-bw-sub">Sin datos hoy</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Alertas hoy</div>
+      <div class="kpi-value bad" id="kpi-alertas">—</div>
+      <div class="kpi-sub">Jugadores con total ≤ 7</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Con lesión activa</div>
+      <div class="kpi-value bad" id="kpi-lesion">—</div>
+      <div class="kpi-sub" id="kpi-lesion-sub">en el período</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Sesiones registradas</div>
+      <div class="kpi-value lime" id="kpi-sesiones">—</div>
+      <div class="kpi-sub" id="kpi-sesiones-sub">en el período</div>
+    </div>
+  </div>
+
+  <!-- Heatmap + Player list -->
+  <div class="grid-heatmap">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Mapa de Bienestar</div>
+          <div class="card-subtitle">Puntuación total diaria por jugador (3–15)</div>
+        </div>
+        <span class="badge badge-lime">14 días</span>
+      </div>
+      <div class="card-body">
+        <div class="heatmap-scroll">
+          <div class="heatmap" id="heatmap"></div>
+        </div>
+        <div class="hm-legend">
+          <div class="hm-leg-item"><div class="hm-leg-dot" style="background:rgba(74,222,128,.35)"></div>Bueno (≥12)</div>
+          <div class="hm-leg-item"><div class="hm-leg-dot" style="background:rgba(251,191,36,.35)"></div>Normal (8–11)</div>
+          <div class="hm-leg-item"><div class="hm-leg-dot" style="background:rgba(248,113,113,.35)"></div>Alerta (≤7)</div>
+          <div class="hm-leg-item"><div class="hm-leg-dot" style="background:var(--surface2);border:1px solid var(--border)"></div>Sin dato</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Estado del Plantel</div>
+          <div class="card-subtitle">Último registro disponible</div>
+        </div>
+      </div>
+      <div class="card-body" style="padding:12px 20px">
+        <div class="player-list" id="player-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wellness trend -->
+  <div class="full">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Evolución del Bienestar del Equipo</div>
+          <div class="card-subtitle">Promedio diario — total, sueño, fatiga y dolor muscular</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="chart-wrap" style="height:280px">
+          <canvas id="chart-wellness"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Radar + ACWR -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Perfil Individual</div>
+          <div class="card-subtitle">Esta semana vs. semana anterior</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="player-selector" id="player-selector"></div>
+        <div class="chart-wrap" style="height:260px">
+          <canvas id="chart-radar"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Carga &amp; ACWR</div>
+          <div class="card-subtitle">Ratio carga aguda/crónica — zona óptima 0.8–1.3</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="acwr-legend">
+          <div class="acwr-zone"><div class="acwr-dot" style="background:#4ade80"></div>Óptima (0.8–1.3)</div>
+          <div class="acwr-zone"><div class="acwr-dot" style="background:#fbbf24"></div>Riesgo (1.3–1.5)</div>
+          <div class="acwr-zone"><div class="acwr-dot" style="background:#f87171"></div>Peligro (&gt;1.5)</div>
+        </div>
+        <div class="chart-wrap" style="height:230px">
+          <canvas id="chart-acwr"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RPE por jugador -->
+  <div class="full">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">RPE por Jugador</div>
+          <div class="card-subtitle">Esfuerzo percibido promedio en el período (escala 1–10)</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="chart-wrap" style="height:220px">
+          <canvas id="chart-rpe"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Minutos en partidos -->
+  <div class="full" id="section-minutos" style="display:none">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Minutos Jugados</div>
+          <div class="card-subtitle">Total por jugador en partidos del período</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="chart-wrap" style="height:220px">
+          <canvas id="chart-minutos"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxPBKNvOhqXCK1Vz7Pj0rJFLofNyIZluJmJWzeAYVrVt164TYWtmlJTN0-ap-QykPw/exec';
+
+const params   = new URLSearchParams(window.location.search);
+const TEAM_ID  = params.get('team')    || '';
+const TEAM_KEY = params.get('key')     || '';
+const ADMIN_PW = params.get('adminPw') || '';
+
+let rawData        = null;
+let rangeDays      = 14;
+let selectedPlayer = null;
+
+let cWellness = null, cRadar = null, cAcwr = null, cRpe = null, cMinutos = null;
+
+Chart.defaults.color       = '#8899aa';
+Chart.defaults.borderColor = '#252d38';
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+async function init() {
+  if (!TEAM_ID || (!TEAM_KEY && !ADMIN_PW)) {
+    showError('Parámetros de acceso inválidos.<br>Usa el enlace desde el panel de administración.');
+    return;
+  }
+  try {
+    const body = { action: 'get_analytics', teamId: TEAM_ID };
+    if (ADMIN_PW) body.adminPassword = ADMIN_PW;
+    else          body.teamKey = TEAM_KEY;
+
+    const res  = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(body) });
+    rawData    = await res.json();
+
+    if (!rawData.ok) throw new Error(rawData.error || 'Error desconocido');
+
+    document.getElementById('team-chip').textContent = rawData.teamName;
+    document.getElementById('header-sub').textContent = 'Dashboard analítico · ' + rawData.teamName;
+    document.getElementById('loading-overlay').style.display = 'none';
+    render();
+  } catch (e) {
+    showError(e.message);
+  }
+}
+
+function showError(msg) {
+  document.getElementById('loading-overlay').innerHTML =
+    `<div style="text-align:center;color:#f87171;padding:24px">
+       <div style="font-size:2.5rem;margin-bottom:14px">⚠️</div>
+       <div style="font-size:.9rem;line-height:1.6">${msg}</div>
+     </div>`;
+}
+
+// ── RANGE ─────────────────────────────────────────────────────────────────
+function setRange(days, btn) {
+  rangeDays = days;
+  document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────
+function render() {
+  if (!rawData) return;
+
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - rangeDays);
+  cutoff.setHours(0, 0, 0, 0);
+
+  const bienestar   = rawData.bienestar.filter(r => toDate(r.fecha) >= cutoff);
+  const entrenos    = rawData.entrenos.filter(r => toDate(r.fecha) >= cutoff);
+  const partidosInd = rawData.partidosInd.filter(r => toDate(r.fecha) >= cutoff);
+
+  renderKPIs(bienestar, entrenos);
+  renderHeatmap(rawData.bienestar);      // always 14d
+  renderPlayerList(bienestar);
+  renderWellnessTrend(bienestar);
+  renderRadar(bienestar);
+  renderACWR(rawData.bienestar, rawData.entrenos);  // needs full history for 28d chronic
+  renderRPE(bienestar);
+  renderMinutos(partidosInd);
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────
+function toDate(str) {
+  if (!str) return new Date(0);
+  const s = str.toString().split('T')[0].replace(/\//g, '-');
+  const [y, m, d] = s.split('-');
+  if (!y || !m || !d) return new Date(0);
+  return new Date(+y, +m - 1, +d);
+}
+
+function dk(d) {
+  const dt = d instanceof Date ? d : toDate(d);
+  if (isNaN(dt)) return '';
+  return dt.getFullYear() + '-' +
+    String(dt.getMonth() + 1).padStart(2, '0') + '-' +
+    String(dt.getDate()).padStart(2, '0');
+}
+
+function avg(arr) {
+  const v = arr.filter(x => x != null && !isNaN(x) && x !== 0);
+  return v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0;
+}
+
+function wClass(total) {
+  if (!total) return 'empty';
+  if (total >= 12) return 'good';
+  if (total >= 8)  return 'warn';
+  return 'bad';
+}
+
+function fmtDate(dkStr) {
+  const [, m, d] = dkStr.split('-');
+  return d + '/' + m;
+}
+
+// ── KPIs ──────────────────────────────────────────────────────────────────
+function renderKPIs(bienestar, entrenos) {
+  const todayKey = dk(new Date());
+  const todayB   = bienestar.filter(r => dk(r.fecha) === todayKey);
+
+  const el = document.getElementById('kpi-bw');
+  if (todayB.length) {
+    const a = avg(todayB.map(r => r.total));
+    el.textContent = a.toFixed(1) + '/15';
+    el.className = 'kpi-value ' + wClass(a);
+    document.getElementById('kpi-bw-sub').textContent = todayB.length + ' jugador(es) hoy';
+  } else {
+    el.textContent = '—';
+    el.className = 'kpi-value';
+    document.getElementById('kpi-bw-sub').textContent = 'Sin datos hoy';
+  }
+
+  document.getElementById('kpi-alertas').textContent =
+    todayB.filter(r => r.total > 0 && r.total <= 7).length;
+
+  const lesionados = [...new Set(
+    bienestar.filter(r => r.lesion && r.lesion !== '' && r.lesion.toLowerCase() !== 'no')
+             .map(r => r.jugador)
+  )];
+  document.getElementById('kpi-lesion').textContent = lesionados.length;
+  document.getElementById('kpi-lesion-sub').textContent =
+    lesionados.length ? lesionados.slice(0, 3).join(', ') + (lesionados.length > 3 ? '…' : '') : 'Sin lesiones activas';
+
+  document.getElementById('kpi-sesiones').textContent = entrenos.length;
+  document.getElementById('kpi-sesiones-sub').textContent =
+    'de entrenamiento · ' + [...new Set(bienestar.map(r => dk(r.fecha)))].length + ' días con bienestar';
+}
+
+// ── HEATMAP ───────────────────────────────────────────────────────────────
+function renderHeatmap(allB) {
+  const hm = document.getElementById('heatmap');
+
+  const days = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push(dk(d));
+  }
+
+  const players = [...new Set(allB.map(r => r.jugador))].filter(Boolean).sort();
+
+  if (!players.length) {
+    hm.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Sin datos de bienestar registrados aún</div></div>';
+    return;
+  }
+
+  // Lookup: "jugador|fecha" → entry (keep highest total per day)
+  const lookup = {};
+  allB.forEach(r => {
+    const key = r.jugador + '|' + dk(r.fecha);
+    if (!lookup[key] || r.total > (lookup[key].total || 0)) lookup[key] = r;
+  });
+
+  hm.style.gridTemplateColumns = '120px ' + days.map(() => '34px').join(' ');
+  hm.innerHTML = '';
+
+  // Corner
+  hm.appendChild(document.createElement('div'));
+
+  // Date headers
+  days.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'hm-date';
+    el.textContent = fmtDate(d);
+    hm.appendChild(el);
+  });
+
+  // Player rows
+  players.forEach(player => {
+    const pEl = document.createElement('div');
+    pEl.className = 'hm-player';
+    pEl.textContent = player.length > 14 ? player.slice(0, 13) + '…' : player;
+    hm.appendChild(pEl);
+
+    days.forEach(d => {
+      const entry = lookup[player + '|' + d];
+      const cell  = document.createElement('div');
+      cell.className = 'hm-cell ' + (entry ? wClass(entry.total) : 'empty');
+      cell.textContent = entry ? entry.total || '·' : '·';
+
+      cell.addEventListener('mousemove', e => {
+        const tt = document.getElementById('hm-tooltip');
+        if (entry) {
+          const hasLesion = entry.lesion && entry.lesion.toLowerCase() !== 'no' && entry.lesion !== '';
+          tt.innerHTML = `
+            <div class="tt-name">${player}</div>
+            <div class="tt-row">📅 ${d}</div>
+            <div class="tt-row">🌙 Sueño: <span>${entry.sueno}/5</span></div>
+            <div class="tt-row">⚡ Fatiga: <span>${entry.fatiga}/5</span></div>
+            <div class="tt-row">💪 Dolor: <span>${entry.dolorMuscular}/5</span></div>
+            <div class="tt-row">📊 Total: <span style="font-weight:600">${entry.total}/15</span></div>
+            ${entry.rpe ? `<div class="tt-row">🏃 RPE: <span>${entry.rpe}/10</span></div>` : ''}
+            ${hasLesion ? `<div class="tt-row" style="color:#f87171;margin-top:4px">⚠️ ${entry.lesion}</div>` : ''}
+          `;
+        } else {
+          tt.innerHTML = `<div class="tt-name">${player}</div><div class="tt-row" style="color:#3d4f63">Sin registro el ${d}</div>`;
+        }
+        tt.style.display = 'block';
+        tt.style.left = (e.clientX + 14) + 'px';
+        tt.style.top  = (e.clientY + 14) + 'px';
+      });
+      cell.addEventListener('mouseleave', () => {
+        document.getElementById('hm-tooltip').style.display = 'none';
+      });
+
+      hm.appendChild(cell);
+    });
+  });
+}
+
+// ── PLAYER LIST ───────────────────────────────────────────────────────────
+function renderPlayerList(bienestar) {
+  const list    = document.getElementById('player-list');
+  const players = [...new Set(bienestar.map(r => r.jugador))].filter(Boolean).sort();
+
+  if (!players.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">👥</div><div class="empty-text">Sin jugadores en el período</div></div>';
+    return;
+  }
+
+  // Last entry per player
+  const last = {};
+  bienestar.forEach(r => {
+    if (!last[r.jugador] || toDate(r.fecha) > toDate(last[r.jugador].fecha)) last[r.jugador] = r;
+  });
+
+  list.innerHTML = players.map(p => {
+    const e   = last[p];
+    const cls = e ? wClass(e.total) : 'empty';
+    const hasLesion = e && e.lesion && e.lesion.toLowerCase() !== 'no' && e.lesion !== '';
+    const dims = e ? `🌙${e.sueno} ⚡${e.fatiga} 💪${e.dolorMuscular}` : '—';
+    const score = e ? e.total + '/15' : '—';
+    return `<div class="player-row">
+      <div>
+        <div class="player-name">${p}${hasLesion ? '<span class="injury-tag">⚠️ Lesión</span>' : ''}</div>
+        <div class="player-dims">${dims}</div>
+      </div>
+      <span class="score-pill ${cls}">${score}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── WELLNESS TREND ────────────────────────────────────────────────────────
+function renderWellnessTrend(bienestar) {
+  const ctx = document.getElementById('chart-wellness').getContext('2d');
+  if (cWellness) { cWellness.destroy(); cWellness = null; }
+
+  const byDate = {};
+  bienestar.forEach(r => {
+    const d = dk(r.fecha);
+    if (!d) return;
+    if (!byDate[d]) byDate[d] = [];
+    byDate[d].push(r);
+  });
+
+  const dates   = Object.keys(byDate).sort();
+  if (!dates.length) {
+    replaceWithEmpty(ctx.canvas, '📈', 'Sin datos en el período seleccionado');
+    return;
+  }
+
+  const labels   = dates.map(fmtDate);
+  const totals   = dates.map(d => +avg(byDate[d].map(r => r.total)).toFixed(1));
+  const suenios  = dates.map(d => +avg(byDate[d].map(r => r.sueno)).toFixed(2));
+  const fatigas  = dates.map(d => +avg(byDate[d].map(r => r.fatiga)).toFixed(2));
+  const dolores  = dates.map(d => +avg(byDate[d].map(r => r.dolorMuscular)).toFixed(2));
+
+  cWellness = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Total (/15)', data: totals,  borderColor: '#a3e635', backgroundColor: 'rgba(163,230,53,.08)', borderWidth: 2.5, pointRadius: 4, pointBackgroundColor: '#a3e635', tension: .35, yAxisID: 'y1', fill: true },
+        { label: 'Sueño (/5)', data: suenios,  borderColor: '#60a5fa', backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 3, tension: .35, yAxisID: 'y2', borderDash: [5,3] },
+        { label: 'Fatiga (/5)', data: fatigas, borderColor: '#fbbf24', backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 3, tension: .35, yAxisID: 'y2', borderDash: [5,3] },
+        { label: 'Dolor (/5)',  data: dolores, borderColor: '#f87171', backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 3, tension: .35, yAxisID: 'y2', borderDash: [5,3] },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { boxWidth: 12, padding: 16, color: '#8899aa', font: { size: 12 } } },
+        tooltip: { backgroundColor: '#1a2232', borderColor: '#252d38', borderWidth: 1, padding: 10 }
+      },
+      scales: {
+        x: { grid: { color: '#181f2a' }, ticks: { maxRotation: 0, maxTicksLimit: 14 } },
+        y1: { position: 'left',  min: 3, max: 15, grid: { color: '#181f2a' }, ticks: { stepSize: 3 },
+              title: { display: true, text: 'Total', color: '#a3e635', font: { size: 11 } } },
+        y2: { position: 'right', min: 1, max: 5,  grid: { drawOnChartArea: false },
+              title: { display: true, text: 'Sub-escala', color: '#8899aa', font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+// ── RADAR ─────────────────────────────────────────────────────────────────
+function renderRadar(bienestar) {
+  const players = [...new Set(bienestar.map(r => r.jugador))].filter(Boolean).sort();
+  const sel = document.getElementById('player-selector');
+  sel.innerHTML = players.map(p =>
+    `<button class="p-btn${p === selectedPlayer ? ' active' : ''}" onclick="selectPlayer('${p.replace(/'/g,"&#39;")}')">${p}</button>`
+  ).join('');
+
+  if (!selectedPlayer && players.length) selectedPlayer = players[0];
+
+  const ctx = document.getElementById('chart-radar').getContext('2d');
+  if (cRadar) { cRadar.destroy(); cRadar = null; }
+
+  if (!players.length) {
+    replaceWithEmpty(ctx.canvas, '🎯', 'Sin datos disponibles');
+    return;
+  }
+
+  const now  = new Date();
+  const w1s  = new Date(now); w1s.setDate(now.getDate() - 7);
+  const w2s  = new Date(now); w2s.setDate(now.getDate() - 14);
+
+  const pd   = bienestar.filter(r => r.jugador === selectedPlayer);
+  const this_ = pd.filter(r => toDate(r.fecha) >= w1s);
+  const prev_ = pd.filter(r => toDate(r.fecha) >= w2s && toDate(r.fecha) < w1s);
+
+  const dims  = ['Sueño', 'Fatiga', 'Dolor Musc.', 'RPE (/2)'];
+  const vals  = arr => [
+    +avg(arr.map(r => r.sueno)).toFixed(2),
+    +avg(arr.map(r => r.fatiga)).toFixed(2),
+    +avg(arr.map(r => r.dolorMuscular)).toFixed(2),
+    +( avg(arr.map(r => r.rpe)) / 2 ).toFixed(2)
+  ];
+
+  cRadar = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: dims,
+      datasets: [
+        { label: 'Esta semana',     data: vals(this_), borderColor: '#a3e635', backgroundColor: 'rgba(163,230,53,.15)', pointBackgroundColor: '#a3e635', borderWidth: 2 },
+        { label: 'Semana anterior', data: vals(prev_), borderColor: '#60a5fa', backgroundColor: 'rgba(96,165,250,.1)',  pointBackgroundColor: '#60a5fa', borderWidth: 1.5, borderDash: [4,3] }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        r: {
+          min: 0, max: 5,
+          grid: { color: '#252d38' }, angleLines: { color: '#252d38' },
+          pointLabels: { color: '#8899aa', font: { size: 11 } },
+          ticks: { color: '#3d4f63', stepSize: 1, backdropColor: 'transparent' }
+        }
+      },
+      plugins: {
+        legend: { labels: { boxWidth: 12, color: '#8899aa', font: { size: 12 } } },
+        tooltip: { backgroundColor: '#1a2232', borderColor: '#252d38', borderWidth: 1 }
+      }
+    }
+  });
+}
+
+function selectPlayer(p) {
+  selectedPlayer = p;
+  document.querySelectorAll('.p-btn').forEach(b => b.classList.toggle('active', b.textContent === p));
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - rangeDays);
+  renderRadar(rawData.bienestar.filter(r => toDate(r.fecha) >= cutoff));
+}
+
+// ── ACWR ──────────────────────────────────────────────────────────────────
+function renderACWR(allB, allE) {
+  const ctx = document.getElementById('chart-acwr').getContext('2d');
+  if (cAcwr) { cAcwr.destroy(); cAcwr = null; }
+
+  // Build daily load for last 60 days: avg team RPE × session duration
+  const eByDate = {};
+  allE.forEach(r => { const d = dk(r.fecha); if (d) eByDate[d] = r; });
+  const bByDate = {};
+  allB.forEach(r => {
+    const d = dk(r.fecha);
+    if (!d) return;
+    if (!bByDate[d]) bByDate[d] = [];
+    bByDate[d].push(r);
+  });
+
+  const loads = [];
+  for (let i = 59; i >= 0; i--) {
+    const dt  = new Date(); dt.setDate(dt.getDate() - i);
+    const d   = dk(dt);
+    const rpe = bByDate[d] ? avg(bByDate[d].map(r => r.rpe)) : 0;
+    const dur = eByDate[d] ? (eByDate[d].duracion || 60) : (bByDate[d] && rpe > 0 ? 60 : 0);
+    loads.push({ d, load: rpe > 0 ? rpe * dur : 0 });
+  }
+
+  const labels = [], acwr = [], acute = [], chronic = [];
+  for (let i = 27; i < loads.length; i++) {
+    const a = avg(loads.slice(i - 6, i + 1).map(l => l.load));
+    const c = avg(loads.slice(i - 27, i + 1).map(l => l.load));
+    labels.push(fmtDate(loads[i].d));
+    acute.push(+a.toFixed(0));
+    chronic.push(+c.toFixed(0));
+    acwr.push(c > 0 ? +(a / c).toFixed(2) : null);
+  }
+
+  if (acwr.every(v => v === null || v === 0)) {
+    replaceWithEmpty(ctx.canvas, '📉', 'Se necesitan al menos 28 días de RPE<br>para calcular el ACWR');
+    return;
+  }
+
+  cAcwr = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { type: 'bar',  label: 'Carga aguda (UA)', data: acute,  backgroundColor: 'rgba(163,230,53,.2)', borderColor: '#a3e635', borderWidth: 1, yAxisID: 'y1' },
+        { type: 'line', label: 'ACWR',              data: acwr,   borderColor: '#60a5fa', backgroundColor: 'transparent', borderWidth: 2.5, pointRadius: 3, tension: .3, yAxisID: 'y2',
+          segment: {
+            borderColor: ctx => {
+              const v = ctx.p1.parsed.y;
+              if (v > 1.5) return '#f87171';
+              if (v > 1.3) return '#fbbf24';
+              return '#60a5fa';
+            }
+          }
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { boxWidth: 12, color: '#8899aa', font: { size: 12 } } },
+        tooltip: { backgroundColor: '#1a2232', borderColor: '#252d38', borderWidth: 1 }
+      },
+      scales: {
+        x: { grid: { color: '#181f2a' }, ticks: { maxTicksLimit: 12 } },
+        y1: { position: 'left',  grid: { color: '#181f2a' }, title: { display: true, text: 'Carga (UA)', color: '#8899aa', font: { size: 11 } } },
+        y2: { position: 'right', min: 0, max: 2.2, grid: { drawOnChartArea: false },
+              title: { display: true, text: 'ACWR', color: '#60a5fa', font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+// ── RPE POR JUGADOR ───────────────────────────────────────────────────────
+function renderRPE(bienestar) {
+  const ctx = document.getElementById('chart-rpe').getContext('2d');
+  if (cRpe) { cRpe.destroy(); cRpe = null; }
+
+  const players = [...new Set(bienestar.map(r => r.jugador))].filter(Boolean).sort();
+  if (!players.length) { replaceWithEmpty(ctx.canvas, '🏃', 'Sin datos de RPE'); return; }
+
+  const data = players.map(p => {
+    const vals = bienestar.filter(r => r.jugador === p && r.rpe > 0).map(r => r.rpe);
+    return vals.length ? +avg(vals).toFixed(1) : 0;
+  });
+
+  const bgColors = data.map(v => v >= 8 ? 'rgba(248,113,113,.35)' : v >= 6 ? 'rgba(251,191,36,.35)' : 'rgba(163,230,53,.35)');
+  const brColors = data.map(v => v >= 8 ? '#f87171' : v >= 6 ? '#fbbf24' : '#a3e635');
+
+  cRpe = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: players,
+      datasets: [{ label: 'RPE Promedio', data, backgroundColor: bgColors, borderColor: brColors, borderWidth: 1.5, borderRadius: 6 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor: '#1a2232', borderColor: '#252d38', borderWidth: 1 }
+      },
+      scales: {
+        x: { grid: { color: '#181f2a' } },
+        y: { min: 0, max: 10, grid: { color: '#181f2a' }, ticks: { stepSize: 2 } }
+      }
+    }
+  });
+}
+
+// ── MINUTOS ───────────────────────────────────────────────────────────────
+function renderMinutos(partidosInd) {
+  const sec = document.getElementById('section-minutos');
+  const ctx = document.getElementById('chart-minutos').getContext('2d');
+  if (cMinutos) { cMinutos.destroy(); cMinutos = null; }
+
+  if (!partidosInd.length) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+
+  const players = [...new Set(partidosInd.map(r => r.jugador))].filter(Boolean).sort();
+  const mins    = players.map(p => partidosInd.filter(r => r.jugador === p).reduce((s, r) => s + (r.minutos || 0), 0));
+
+  cMinutos = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: players,
+      datasets: [{ label: 'Minutos jugados', data: mins, backgroundColor: 'rgba(96,165,250,.3)', borderColor: '#60a5fa', borderWidth: 1.5, borderRadius: 6 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor: '#1a2232', borderColor: '#252d38', borderWidth: 1 }
+      },
+      scales: {
+        x: { grid: { color: '#181f2a' } },
+        y: { min: 0, grid: { color: '#181f2a' }, title: { display: true, text: 'Minutos', color: '#8899aa', font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+// ── EMPTY STATE HELPER ────────────────────────────────────────────────────
+function replaceWithEmpty(canvas, icon, text) {
+  const wrap = canvas.parentElement;
+  wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">${icon}</div><div class="empty-text">${text}</div></div>`;
+}
+
+init();
+</script>
+</body>
+</html>

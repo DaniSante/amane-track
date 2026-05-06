@@ -403,6 +403,7 @@ function renderTeams() {
             ${t.active
               ? `<button class="btn-toggle btn-toggle-off" onclick="toggleTeam('${t.teamId}')">🔴 Desactivar equipo</button>`
               : `<button class="btn-toggle btn-toggle-on"  onclick="toggleTeam('${t.teamId}')">🟢 Activar equipo</button>`}
+            <a class="btn-toggle" style="background:rgba(96,165,250,.1);border-color:#60a5fa;color:#60a5fa;text-decoration:none;display:inline-flex;align-items:center;gap:6px" href="${BASE_URL}dashboard.html?team=${t.teamId}&adminPw=${adminPass}" target="_blank">📊 Dashboard</a>
           </div>
         </div>
       </div>
