@@ -241,8 +241,8 @@
     <button class="range-btn" data-days="7"   onclick="setRange(7,this)">7 días</button>
     <button class="range-btn" data-days="14"  onclick="setRange(14,this)">14 días</button>
     <button class="range-btn" data-days="30"  onclick="setRange(30,this)">30 días</button>
-    <button class="range-btn active" data-days="90"  onclick="setRange(90,this)">90 días</button>
-    <button class="range-btn" data-days="365" onclick="setRange(365,this)">Temporada</button>
+    <button class="range-btn" data-days="90"  onclick="setRange(90,this)">90 días</button>
+    <button class="range-btn active" data-days="365" onclick="setRange(365,this)">Temporada</button>
   </div>
 
   <!-- KPIs -->
@@ -404,7 +404,7 @@ const TEAM_KEY = params.get('key')     || '';
 const ADMIN_PW = params.get('adminPw') || '';
 
 let rawData        = null;
-let rangeDays      = 90;
+let rangeDays      = 365;
 let selectedPlayer = null;
 
 let cWellness = null, cRadar = null, cAcwr = null, cRpe = null, cMinutos = null;
@@ -667,7 +667,8 @@ function renderPlayerList(bienestar) {
 
 // ── WELLNESS TREND ────────────────────────────────────────────────────────
 function renderWellnessTrend(bienestar) {
-  const ctx = document.getElementById('chart-wellness').getContext('2d');
+  const ctx = getCtx('chart-wellness');
+  if (!ctx) return;
   if (cWellness) { cWellness.destroy(); cWellness = null; }
 
   const byDate = {};
@@ -680,7 +681,7 @@ function renderWellnessTrend(bienestar) {
 
   const dates   = Object.keys(byDate).sort();
   if (!dates.length) {
-    replaceWithEmpty(ctx.canvas, '📈', 'Sin datos en el período seleccionado');
+    showEmpty(ctx.canvas, '📈', 'Sin datos en el período seleccionado');
     return;
   }
 
@@ -729,11 +730,12 @@ function renderRadar(bienestar) {
 
   if (!selectedPlayer && players.length) selectedPlayer = players[0];
 
-  const ctx = document.getElementById('chart-radar').getContext('2d');
+  const ctx = getCtx('chart-radar');
+  if (!ctx) return;
   if (cRadar) { cRadar.destroy(); cRadar = null; }
 
   if (!players.length) {
-    replaceWithEmpty(ctx.canvas, '🎯', 'Sin datos disponibles');
+    showEmpty(ctx.canvas, '🎯', 'Sin datos disponibles');
     return;
   }
 
@@ -790,7 +792,8 @@ function selectPlayer(p) {
 
 // ── ACWR ──────────────────────────────────────────────────────────────────
 function renderACWR(allB, allE) {
-  const ctx = document.getElementById('chart-acwr').getContext('2d');
+  const ctx = getCtx('chart-acwr');
+  if (!ctx) return;
   if (cAcwr) { cAcwr.destroy(); cAcwr = null; }
 
   // Build daily load for last 60 days: avg team RPE × session duration
@@ -824,7 +827,7 @@ function renderACWR(allB, allE) {
   }
 
   if (acwr.every(v => v === null || v === 0)) {
-    replaceWithEmpty(ctx.canvas, '📉', 'Se necesitan al menos 28 días de RPE<br>para calcular el ACWR');
+    showEmpty(ctx.canvas, '📉', 'Se necesitan al menos 28 días de RPE<br>para calcular el ACWR');
     return;
   }
 
@@ -865,11 +868,12 @@ function renderACWR(allB, allE) {
 
 // ── RPE POR JUGADOR ───────────────────────────────────────────────────────
 function renderRPE(bienestar) {
-  const ctx = document.getElementById('chart-rpe').getContext('2d');
+  const ctx = getCtx('chart-rpe');
+  if (!ctx) return;
   if (cRpe) { cRpe.destroy(); cRpe = null; }
 
   const players = [...new Set(bienestar.map(r => r.jugador))].filter(Boolean).sort();
-  if (!players.length) { replaceWithEmpty(ctx.canvas, '🏃', 'Sin datos de RPE'); return; }
+  if (!players.length) { showEmpty(ctx.canvas, '🏃', 'Sin datos de RPE'); return; }
 
   const data = players.map(p => {
     const vals = bienestar.filter(r => r.jugador === p && r.rpe > 0).map(r => r.rpe);
@@ -902,11 +906,13 @@ function renderRPE(bienestar) {
 // ── MINUTOS ───────────────────────────────────────────────────────────────
 function renderMinutos(partidosInd) {
   const sec = document.getElementById('section-minutos');
-  const ctx = document.getElementById('chart-minutos').getContext('2d');
   if (cMinutos) { cMinutos.destroy(); cMinutos = null; }
 
   if (!partidosInd.length) { sec.style.display = 'none'; return; }
   sec.style.display = '';
+
+  const ctx = getCtx('chart-minutos');
+  if (!ctx) return;
 
   const players = [...new Set(partidosInd.map(r => r.jugador))].filter(Boolean).sort();
   const mins    = players.map(p => partidosInd.filter(r => r.jugador === p).reduce((s, r) => s + (r.minutos || 0), 0));
@@ -931,10 +937,28 @@ function renderMinutos(partidosInd) {
   });
 }
 
-// ── EMPTY STATE HELPER ────────────────────────────────────────────────────
-function replaceWithEmpty(canvas, icon, text) {
+// ── CHART HELPERS ─────────────────────────────────────────────────────────
+function getCtx(id) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return null;
+  // Restore canvas if previously hidden
+  canvas.style.display = '';
   const wrap = canvas.parentElement;
-  wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">${icon}</div><div class="empty-text">${text}</div></div>`;
+  wrap.querySelectorAll('.chart-empty').forEach(e => e.remove());
+  return canvas.getContext('2d');
+}
+
+function showEmpty(canvas, icon, text) {
+  // Hide canvas but keep it in the DOM so future renders can restore it
+  canvas.style.display = 'none';
+  const wrap = canvas.parentElement;
+  wrap.querySelectorAll('.chart-empty').forEach(e => e.remove());
+  const div = document.createElement('div');
+  div.className = 'chart-empty empty-state';
+  div.innerHTML = `<div class="empty-icon">${icon}</div><div class="empty-text">${text}</div>`;
+  div.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;';
+  wrap.style.position = 'relative';
+  wrap.appendChild(div);
 }
 
 init();
