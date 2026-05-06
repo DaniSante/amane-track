@@ -238,10 +238,11 @@
   <!-- Date range -->
   <div class="range-bar">
     <span class="range-label">Período:</span>
-    <button class="range-btn" data-days="7"  onclick="setRange(7,this)">7 días</button>
-    <button class="range-btn active" data-days="14" onclick="setRange(14,this)">14 días</button>
-    <button class="range-btn" data-days="30" onclick="setRange(30,this)">30 días</button>
-    <button class="range-btn" data-days="90" onclick="setRange(90,this)">90 días</button>
+    <button class="range-btn" data-days="7"   onclick="setRange(7,this)">7 días</button>
+    <button class="range-btn" data-days="14"  onclick="setRange(14,this)">14 días</button>
+    <button class="range-btn" data-days="30"  onclick="setRange(30,this)">30 días</button>
+    <button class="range-btn active" data-days="90"  onclick="setRange(90,this)">90 días</button>
+    <button class="range-btn" data-days="365" onclick="setRange(365,this)">Temporada</button>
   </div>
 
   <!-- KPIs -->
@@ -403,7 +404,7 @@ const TEAM_KEY = params.get('key')     || '';
 const ADMIN_PW = params.get('adminPw') || '';
 
 let rawData        = null;
-let rangeDays      = 14;
+let rangeDays      = 90;
 let selectedPlayer = null;
 
 let cWellness = null, cRadar = null, cAcwr = null, cRpe = null, cMinutos = null;
@@ -546,12 +547,20 @@ function renderKPIs(bienestar, entrenos) {
 function renderHeatmap(allB) {
   const hm = document.getElementById('heatmap');
 
+  // Show last 14 days within the selected range (anchored to latest data date or today)
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - rangeDays);
+  const rangeData = allB.filter(r => toDate(r.fecha) >= cutoff);
+  const dataDates = rangeData.map(r => dk(r.fecha)).filter(Boolean).sort();
+  const anchor = dataDates.length ? new Date(dataDates[dataDates.length - 1] + 'T12:00:00') : new Date();
+
   const days = [];
   for (let i = 13; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
+    const d = new Date(anchor);
+    d.setDate(anchor.getDate() - i);
     days.push(dk(d));
   }
+  document.querySelector('.badge-lime').textContent = rangeDays <= 14 ? rangeDays + ' días' : '14 días (últimos)';
 
   const players = [...new Set(allB.map(r => r.jugador))].filter(Boolean).sort();
 
