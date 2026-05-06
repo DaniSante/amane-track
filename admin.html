@@ -363,7 +363,8 @@ async function createTeam() {
       document.getElementById('result-box').style.display = 'block';
       document.getElementById('team-name-inp').value = '';
       toast('✅ Equipo "' + name + '" creado');
-      loadTeams();
+      await loadTeams();
+      setTimeout(() => { document.getElementById('result-box').style.display = 'none'; }, 8000);
     } else { toast('❌ ' + r.error); }
   } catch(e) { toast('❌ Error de conexión'); }
   btn.textContent = 'Crear equipo'; btn.disabled = false;
@@ -417,7 +418,7 @@ function toggleDetail(id) {
 async function toggleTeam(teamId) {
   try {
     const r = await api({action:'toggle_team', adminPassword: adminPass, teamId});
-    if(r.ok) { toast(r.active ? '✅ Equipo activado' : '⛔ Equipo desactivado'); loadTeams(); }
+    if(r.ok) { toast(r.active ? '✅ Equipo activado' : '⛔ Equipo desactivado'); await loadTeams(); }
     else toast('❌ ' + r.error);
   } catch(e) { toast('❌ Error de conexión'); }
 }
