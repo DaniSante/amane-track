@@ -150,6 +150,13 @@
     .sec-count { font-size: .6rem; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--r); padding: 2px 8px; color: var(--text-dim); }
     .ai-status { font-size: .62rem; color: var(--text-dim); display: flex; align-items: center; gap: 6px; }
     .ai-status .mini-spin { width: 12px; height: 12px; border: 1px solid var(--border2); border-top-color: var(--teal-hi); border-radius: 50%; animation: spin .7s linear infinite; }
+    .btn-teal {
+      padding: 7px 14px; font-size: .62rem; letter-spacing: .1em; text-transform: uppercase;
+      background: var(--teal-dim); border: 1px solid var(--teal); border-radius: var(--r);
+      color: var(--teal-hi); cursor: pointer; transition: all .15s; font-family: 'Inter', sans-serif;
+    }
+    .btn-teal:hover { background: rgba(75,168,130,.28); border-color: var(--teal-hi); }
+    .btn-teal:disabled { opacity: .4; cursor: default; }
 
     /* ── PLAYER GRID ── */
     .player-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 10px; }
@@ -450,10 +457,14 @@
     <div class="sec-hdr-left">
       <div class="sec-title">Análisis individual</div>
       <div class="sec-count" id="players-count">—</div>
+      <div class="ai-status" id="ai-status" style="display:none">
+        <div class="mini-spin"></div>
+        Generando análisis…
+      </div>
     </div>
-    <div class="ai-status" id="ai-status" style="display:none">
-      <div class="mini-spin"></div>
-      Analizando con IA…
+    <div style="display:flex;align-items:center;gap:10px">
+      <div id="ai-timestamp" style="font-size:.58rem;color:var(--text-dim);letter-spacing:.08em"></div>
+      <button class="btn-teal" id="btn-update" onclick="refreshAI()">Actualizar análisis</button>
     </div>
   </div>
   <div class="player-grid" id="player-grid">
@@ -606,7 +617,7 @@ async function init() {
     document.getElementById('hdr-team').textContent = rawData.teamName || TEAM_ID;
     document.getElementById('loading-overlay').style.display = 'none';
     render();
-    generateAI();
+    loadStoredAnalysis();
   } catch(e) {
     document.getElementById('loading-overlay').innerHTML =
       `<div style="text-align:center;color:#C07070;padding:24px;font-size:.82rem">${e.message}</div>`;
@@ -620,7 +631,7 @@ function setPeriod(period, btn) {
   document.querySelectorAll('.period-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   render();
-  generateAI();
+  loadStoredAnalysis();
 }
 
 function getCutoff(period) {
@@ -981,7 +992,7 @@ function renderPlayerCards(stats) {
       <div class="pc-ai" id="${aiId}">
         ${existingAI
           ? renderAIContent(existingAI)
-          : `<div class="pc-ai-loading"><div class="mini-spin"></div>Analizando con IA…</div>`}
+          : `<div style="padding:12px 18px;font-size:.68rem;color:var(--text-dim);letter-spacing:.04em">Sin análisis · pulsa «Actualizar análisis» tras el entrenamiento</div>`}
       </div>
     </div>`;
   }).join('');
@@ -1005,19 +1016,36 @@ function renderAIContent(ai) {
 }
 
 // ── AI ANALYSIS (AUTO) ────────────────────────────────────
-async function generateAI() {
+// Load stored analysis (no API call — free, instant)
+async function loadStoredAnalysis() {
   if (!playerStats.length) return;
+  try {
+    const r = await api({
+      action: 'generate_analysis',
+      teamId: TEAM_ID, teamKey: TEAM_KEY || '', adminPassword: ADMIN_PW || '',
+      period: currentPeriod, forceRefresh: false
+    });
+    if (r.ok && r.analyses && Object.keys(r.analyses).length) {
+      applyAnalyses(r.analyses, r.timestamp);
+    } else {
+      setAIPlaceholder();
+    }
+  } catch(e) {
+    setAIPlaceholder();
+  }
+}
 
+// Refresh analysis — calls API (manual trigger after training)
+async function refreshAI() {
+  if (!playerStats.length) return;
+  const btn = document.getElementById('btn-update');
   const aiStatus = document.getElementById('ai-status');
+  btn.disabled = true;
   aiStatus.style.display = 'flex';
 
-  // Show loading spinner on any card that doesn't have cached content
   playerStats.forEach(p => {
-    const aiId = 'ai-' + p.nombre.replace(/\s+/g,'_');
-    const el = document.getElementById(aiId);
-    if (el && !aiAnalyses[p.nombre]) {
-      el.innerHTML = `<div class="pc-ai-loading"><div class="mini-spin"></div>Analizando con IA…</div>`;
-    }
+    const el = document.getElementById('ai-' + p.nombre.replace(/\s+/g,'_'));
+    if (el) el.innerHTML = `<div class="pc-ai-loading"><div class="mini-spin"></div>Generando análisis con IA…</div>`;
   });
 
   try {
@@ -1028,38 +1056,45 @@ async function generateAI() {
       acwr: p.acwr, rpe: p.rpe, sRPE: p.sRPE,
       sesiones: p.sesiones, alertas: p.alertas, regularidad: p.regularidad
     }));
-
     const r = await api({
       action: 'generate_analysis',
       teamId: TEAM_ID, teamKey: TEAM_KEY || '', adminPassword: ADMIN_PW || '',
-      period: currentPeriod, players
+      period: currentPeriod, forceRefresh: true, players
     });
-
-    if (r.needsKey) {
-      playerStats.forEach(p => {
-        const aiId = 'ai-' + p.nombre.replace(/\s+/g,'_');
-        const el = document.getElementById(aiId);
-        if (el) el.innerHTML = `<div style="padding:12px 18px;font-size:.68rem;color:var(--text-dim);letter-spacing:.04em">Análisis IA no disponible · contacta al administrador</div>`;
-      });
-      return;
-    }
+    if (r.needsKey) { toast('Análisis IA no configurado · contacta al administrador'); setAIPlaceholder(); return; }
     if (!r.ok) throw new Error(r.error);
-
-    aiAnalyses = r.analyses || {};
-    Object.keys(aiAnalyses).forEach(nombre => {
-      const aiId = 'ai-' + nombre.replace(/\s+/g,'_');
-      const el = document.getElementById(aiId);
-      if (el) el.innerHTML = renderAIContent(aiAnalyses[nombre]);
-    });
+    applyAnalyses(r.analyses || {}, r.timestamp);
+    toast('✓ Análisis actualizado');
   } catch(e) {
     playerStats.forEach(p => {
-      const aiId = 'ai-' + p.nombre.replace(/\s+/g,'_');
-      const el = document.getElementById(aiId);
-      if (el) el.innerHTML = `<div style="padding:12px 18px;font-size:.68rem;color:var(--text-dim)">Error en análisis IA · ${e.message}</div>`;
+      const el = document.getElementById('ai-' + p.nombre.replace(/\s+/g,'_'));
+      if (el) el.innerHTML = `<div style="padding:12px 18px;font-size:.68rem;color:var(--red)">Error: ${e.message}</div>`;
     });
+    toast('Error al generar análisis');
   } finally {
+    btn.disabled = false;
     aiStatus.style.display = 'none';
   }
+}
+
+function applyAnalyses(analyses, timestamp) {
+  aiAnalyses = analyses;
+  Object.keys(analyses).forEach(nombre => {
+    const el = document.getElementById('ai-' + nombre.replace(/\s+/g,'_'));
+    if (el) el.innerHTML = renderAIContent(analyses[nombre]);
+  });
+  if (timestamp) {
+    const d = new Date(timestamp);
+    const label = d.toLocaleDateString('es', {day:'2-digit',month:'2-digit'}) + ' · ' + d.toLocaleTimeString('es', {hour:'2-digit',minute:'2-digit'});
+    document.getElementById('ai-timestamp').textContent = 'Análisis del ' + label;
+  }
+}
+
+function setAIPlaceholder() {
+  playerStats.forEach(p => {
+    const el = document.getElementById('ai-' + p.nombre.replace(/\s+/g,'_'));
+    if (el) el.innerHTML = `<div style="padding:12px 18px;font-size:.68rem;color:var(--text-dim);letter-spacing:.04em">Sin análisis · pulsa «Actualizar análisis» tras el entrenamiento</div>`;
+  });
 }
 
 // ── CHART TABS ────────────────────────────────────────────
