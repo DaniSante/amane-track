@@ -172,6 +172,9 @@ textarea { width: 100%; padding: 11px 13px; resize: vertical; min-height: 90px; 
 .btn-refresh:hover { border-color: var(--teal); color: var(--teal-hi); }
 .sub-grid { display: flex; flex-wrap: wrap; gap: 6px; }
 .sub-tag { padding: 4px 10px; border-radius: var(--r); font-size: .72rem; font-weight: 500; background: var(--teal-dim); border: 1px solid var(--teal); color: var(--teal-hi); letter-spacing: 0.08em; }
+.sub-tag-rehab { padding: 4px 10px; border-radius: var(--r); font-size: .72rem; font-weight: 500; background: var(--amber-dim); border: 1px solid var(--amber); color: var(--amber); letter-spacing: 0.08em; }
+.sub-flip { background: transparent; border: 1px solid var(--border2); border-radius: var(--r); cursor: pointer; font-size: .62rem; color: var(--text-dim); padding: 2px 6px; margin-left: 2px; transition: all .15s; font-family: 'Inter', sans-serif; letter-spacing: 0.06em; }
+.sub-flip:hover { border-color: var(--teal); color: var(--teal-hi); }
 .sub-empty { font-size: .78rem; color: var(--text-dim); }
 .sub-loading { font-size: .75rem; color: var(--text-dim); display: flex; align-items: center; gap: 6px; }
 
@@ -689,15 +692,47 @@ async function checkSubmissions() {
   try {
     const r = await api({action:'check_submissions', teamId:TEAM_ID, teamKey:TEAM_KEY});
     if(r.ok) {
-      const html = r.submitted.length
-        ? r.submitted.map(n=>`<div class="sub-tag">✓ ${n}</div>`).join('')
-        : '<div class="sub-empty">Ningún jugador ha enviado el formulario aún hoy</div>';
+      const full = r.submittedFull || [];
+      let html = '';
+      if(!full.length) {
+        html = '<div class="sub-empty">Ningún jugador ha enviado el formulario aún hoy</div>';
+      } else {
+        html = full.map(s => {
+          const isRehab = s.contexto === 'rehab';
+          const cls   = isRehab ? 'sub-tag-rehab' : 'sub-tag';
+          const label = isRehab ? `↻ ${s.jugador} · rehab` : `✓ ${s.jugador}`;
+          const newCtx = isRehab ? 'equipo' : 'rehab';
+          const flipTxt = isRehab ? '→ equipo' : '→ rehab';
+          const ts = s.timestamp.replace(/'/g, '');
+          return `<span style="display:inline-flex;align-items:center;gap:2px;margin:2px 0">
+            <span class="${cls}">${label}</span>
+            <button class="sub-flip" onclick="flipContext('${ts}','${s.jugador}','${newCtx}',this)">${flipTxt}</button>
+          </span>`;
+        }).join('');
+      }
       lists.forEach(id=>{ if(document.getElementById(id)) document.getElementById(id).innerHTML=html; });
     } else {
       lists.forEach(id=>{ if(document.getElementById(id)) document.getElementById(id).innerHTML='<div class="sub-empty">Error al comprobar</div>'; });
     }
   } catch(e) {
     lists.forEach(id=>{ if(document.getElementById(id)) document.getElementById(id).innerHTML='<div class="sub-empty">Sin conexión</div>'; });
+  }
+}
+
+async function flipContext(timestamp, jugador, newContext, btn) {
+  btn.textContent = '…'; btn.disabled = true;
+  try {
+    const r = await api({action:'correct_context', teamId:TEAM_ID, teamKey:TEAM_KEY, timestamp, newContext});
+    if(r.ok) {
+      toast(`✓ ${jugador} → ${newContext}`);
+      checkSubmissions();
+    } else {
+      toast('❌ ' + (r.error || 'Error al corregir'));
+      btn.disabled = false;
+    }
+  } catch(e) {
+    toast('❌ Sin conexión');
+    btn.disabled = false;
   }
 }
 
