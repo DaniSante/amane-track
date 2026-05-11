@@ -551,10 +551,15 @@ function renderKPIs(bienestar, entrenos) {
   document.getElementById('kpi-alertas').textContent =
     todayB.filter(r => r.total > 0 && r.total <= 7).length;
 
-  const lesionados = [...new Set(
-    bienestar.filter(r => r.lesion && r.lesion !== '' && r.lesion.toLowerCase() !== 'no')
-             .map(r => r.jugador)
-  )];
+  // Only count players whose LATEST submission still reports a lesion
+  const latestPerPlayer = {};
+  bienestar.forEach(r => {
+    if (!latestPerPlayer[r.jugador] || dk(r.fecha) > dk(latestPerPlayer[r.jugador].fecha))
+      latestPerPlayer[r.jugador] = r;
+  });
+  const lesionados = Object.values(latestPerPlayer)
+    .filter(r => r.lesion && r.lesion !== '' && r.lesion.toLowerCase() !== 'no')
+    .map(r => r.jugador);
   document.getElementById('kpi-lesion').textContent = lesionados.length;
   document.getElementById('kpi-lesion-sub').textContent =
     lesionados.length ? lesionados.slice(0, 3).join(', ') + (lesionados.length > 3 ? '…' : '') : 'Sin lesiones activas';
@@ -839,8 +844,8 @@ function renderACWR(allB, allE) {
 
   const labels = [], acwr = [], acute = [], chronic = [];
   for (let i = 27; i < loads.length; i++) {
-    const a = avg(loads.slice(i - 6, i + 1).map(l => l.load));
-    const c = avg(loads.slice(i - 27, i + 1).map(l => l.load));
+    const a = loads.slice(i - 6,  i + 1).reduce((s, l) => s + l.load, 0) / 7;
+    const c = loads.slice(i - 27, i + 1).reduce((s, l) => s + l.load, 0) / 28;
     labels.push(fmtDate(loads[i].d));
     acute.push(+a.toFixed(0));
     chronic.push(+c.toFixed(0));
