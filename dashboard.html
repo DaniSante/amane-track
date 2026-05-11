@@ -487,7 +487,7 @@ function render() {
   const entrenos      = rawData.entrenos.filter(r => toDate(r.fecha) >= cutoff);
   const partidosInd   = rawData.partidosInd.filter(r => toDate(r.fecha) >= cutoff);
 
-  renderKPIs(bienestar, entrenos);
+  renderKPIs(bienestar, bienestarFull, entrenos);
   renderHeatmap(rawData.bienestar);            // siempre histórico completo
   renderPlayerList(bienestarFull);             // selector incluye jugadores en rehab
   renderWellnessTrend(bienestar);              // tendencia del equipo: solo equipo
@@ -532,7 +532,7 @@ function fmtDate(dkStr) {
 }
 
 // ── KPIs ──────────────────────────────────────────────────────────────────
-function renderKPIs(bienestar, entrenos) {
+function renderKPIs(bienestar, bienestarFull, entrenos) {
   const todayKey = dk(new Date());
   const todayB   = bienestar.filter(r => dk(r.fecha) === todayKey);
 
@@ -551,14 +551,14 @@ function renderKPIs(bienestar, entrenos) {
   document.getElementById('kpi-alertas').textContent =
     todayB.filter(r => r.total > 0 && r.total <= 13).length;
 
-  // Only count players whose LATEST submission still reports a lesion
+  // Use full bienestar (incl. rehab) to detect active injuries
   const latestPerPlayer = {};
-  bienestar.forEach(r => {
+  bienestarFull.forEach(r => {
     if (!latestPerPlayer[r.jugador] || dk(r.fecha) > dk(latestPerPlayer[r.jugador].fecha))
       latestPerPlayer[r.jugador] = r;
   });
   const lesionados = Object.values(latestPerPlayer)
-    .filter(r => r.lesion && r.lesion !== '' && r.lesion.toLowerCase() !== 'no')
+    .filter(r => r.lesion && r.lesion !== '' && r.lesion.toLowerCase() !== 'no' && r.lesion !== 'N')
     .map(r => r.jugador);
   document.getElementById('kpi-lesion').textContent = lesionados.length;
   document.getElementById('kpi-lesion-sub').textContent =
