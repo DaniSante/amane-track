@@ -233,6 +233,49 @@ textarea { width: 100%; padding: 11px 13px; resize: vertical; min-height: 90px; 
 /* TOAST */
 #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(14px); background: var(--surface); border: 1px solid var(--border2); color: var(--text); padding: 12px 22px; border-radius: var(--r); font-size: .82rem; font-weight: 400; box-shadow: 0 8px 32px rgba(0,0,0,.5); opacity: 0; transition: opacity .22s, transform .22s; pointer-events: none; z-index: 999; white-space: nowrap; letter-spacing: 0.04em; }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (max-width: 480px) {
+  /* Header */
+  .hdr-top { padding: 10px 12px 0; }
+  .date-chip { display: none; }
+  .brand-name { font-size: .78rem; letter-spacing: 0.16em; }
+  .btn-signout { font-size: .65rem; padding: 4px 8px; }
+
+  /* Panel */
+  .panel { padding: 16px 10px; }
+
+  /* Stats */
+  .sbox-val { font-size: 1.35rem; }
+  .sbox { padding: 12px 10px; }
+
+  /* frow: inputs no fixed min-width */
+  input[type="text"] { min-width: 0; }
+
+  /* Add player form: stack vertical */
+  .add-row { flex-direction: column; gap: 6px; }
+  .add-row input, .add-row select { width: 100%; max-width: 100% !important; min-width: 0 !important; }
+  .btn-add { width: 100%; padding: 11px; }
+  .bdr-row { flex-wrap: wrap; }
+  .bdr-row input[type="date"] { flex: 1; min-width: 0; width: auto; }
+
+  /* Partido conv buttons: más compactos */
+  .conv-btn { padding: 4px 7px; font-size: .68rem; }
+  .pp-card { padding: 11px 12px; }
+  .pp-btns { gap: 4px; }
+
+  /* Player card */
+  .pl-card { padding: 10px 12px; }
+  .add-form { padding: 12px 12px; }
+
+  /* Card header */
+  .card-hdr { padding: 11px 12px 10px; }
+  .fcol { padding: 12px 12px; }
+  .frow { padding: 12px 12px; }
+
+  /* Checker */
+  .checker-box { padding: 12px 12px; }
+  .checker-title { font-size: .7rem; }
+}
 </style>
 </head>
 <body>
@@ -500,7 +543,15 @@ function showPanel() {
 
   // 2. Fetch from backend silently (source of truth across devices)
   api({action:'load_players', teamId:TEAM_ID, teamKey:TEAM_KEY}).then(r => {
-    if(!r.ok || !r.players) return;
+    if(!r.ok) return;
+    if(!r.players) {
+      // GAS vacío pero localStorage tiene datos → subir al servidor (backfill)
+      if(players.length > 0) {
+        api({action:'save_players', teamId:TEAM_ID, teamKey:TEAM_KEY, players:JSON.stringify(players)}).catch(()=>{});
+        toast('↑ Plantilla sincronizada con el servidor');
+      }
+      return;
+    }
     const remote = JSON.parse(r.players);
     if(JSON.stringify(remote) === JSON.stringify(players)) return;
     players = remote;
