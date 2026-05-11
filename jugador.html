@@ -324,7 +324,7 @@ textarea:focus { outline: none; border-color: var(--teal-hi); box-shadow: 0 0 0 
     </div>
   </div>
 
-  <div class="sec-head"><div class="sec-title">Cómo estás hoy — 1 muy mal · 5 muy bien</div><div class="sec-line"></div></div>
+  <div class="sec-head"><div class="sec-title">Cómo estás hoy — 1 muy mal · 7 muy bien</div><div class="sec-line"></div></div>
   <div class="card">
     <div class="scale-row">
       <div class="scale-left">
@@ -337,6 +337,8 @@ textarea:focus { outline: none; border-color: var(--teal-hi); box-shadow: 0 0 0 
         <div class="dot" onclick="pickDot('sc-sueno','j-sueno',3)">3</div>
         <div class="dot" onclick="pickDot('sc-sueno','j-sueno',4)">4</div>
         <div class="dot" onclick="pickDot('sc-sueno','j-sueno',5)">5</div>
+        <div class="dot" onclick="pickDot('sc-sueno','j-sueno',6)">6</div>
+        <div class="dot" onclick="pickDot('sc-sueno','j-sueno',7)">7</div>
       </div>
       <input type="hidden" id="j-sueno">
     </div>
@@ -351,6 +353,8 @@ textarea:focus { outline: none; border-color: var(--teal-hi); box-shadow: 0 0 0 
         <div class="dot" onclick="pickDot('sc-fatiga','j-fatiga',3)">3</div>
         <div class="dot" onclick="pickDot('sc-fatiga','j-fatiga',4)">4</div>
         <div class="dot" onclick="pickDot('sc-fatiga','j-fatiga',5)">5</div>
+        <div class="dot" onclick="pickDot('sc-fatiga','j-fatiga',6)">6</div>
+        <div class="dot" onclick="pickDot('sc-fatiga','j-fatiga',7)">7</div>
       </div>
       <input type="hidden" id="j-fatiga">
     </div>
@@ -365,12 +369,30 @@ textarea:focus { outline: none; border-color: var(--teal-hi); box-shadow: 0 0 0 
         <div class="dot" onclick="pickDot('sc-dolor','j-dolor',3)">3</div>
         <div class="dot" onclick="pickDot('sc-dolor','j-dolor',4)">4</div>
         <div class="dot" onclick="pickDot('sc-dolor','j-dolor',5)">5</div>
+        <div class="dot" onclick="pickDot('sc-dolor','j-dolor',6)">6</div>
+        <div class="dot" onclick="pickDot('sc-dolor','j-dolor',7)">7</div>
       </div>
       <input type="hidden" id="j-dolor">
     </div>
+    <div class="scale-row">
+      <div class="scale-left">
+        <div class="flabel">🧠 Estrés</div>
+        <span class="fhint">¿Cómo es tu nivel de estrés hoy?</span>
+      </div>
+      <div class="dots" id="sc-estres">
+        <div class="dot" onclick="pickDot('sc-estres','j-estres',1)">1</div>
+        <div class="dot" onclick="pickDot('sc-estres','j-estres',2)">2</div>
+        <div class="dot" onclick="pickDot('sc-estres','j-estres',3)">3</div>
+        <div class="dot" onclick="pickDot('sc-estres','j-estres',4)">4</div>
+        <div class="dot" onclick="pickDot('sc-estres','j-estres',5)">5</div>
+        <div class="dot" onclick="pickDot('sc-estres','j-estres',6)">6</div>
+        <div class="dot" onclick="pickDot('sc-estres','j-estres',7)">7</div>
+      </div>
+      <input type="hidden" id="j-estres">
+    </div>
     <div class="total-chip" id="total-chip" style="display:none">
       <div class="tc-left">
-        <div class="tc-lbl">Bienestar total</div>
+        <div class="tc-lbl">Hooper Index</div>
         <span class="tc-badge" id="tc-badge"></span>
       </div>
       <div class="tc-val" id="tc-val">—</div>
@@ -480,18 +502,18 @@ function pickDot(groupId, hiddenId, val) {
 }
 
 function calcBienestar() {
-  const vals = ['j-sueno','j-fatiga','j-dolor'].map(id=>parseInt(document.getElementById(id).value)||0);
+  const vals = ['j-sueno','j-fatiga','j-dolor','j-estres'].map(id=>parseInt(document.getElementById(id).value)||0);
   if(vals.some(v=>v===0)) { document.getElementById('total-chip').style.display='none'; return; }
   const total = vals.reduce((a,b)=>a+b,0);
   const chip  = document.getElementById('total-chip');
   const badge = document.getElementById('tc-badge');
   const tcval = document.getElementById('tc-val');
   chip.style.display = 'flex';
-  tcval.textContent = total + ' / 15';
+  tcval.textContent = total + ' / 28';
   chip.className = 'total-chip';
   badge.className = 'tc-badge';
-  if(total <= 7)       { chip.classList.add('bad');  badge.classList.add('bad');  badge.textContent='Avisa al staff'; }
-  else if(total <= 11) { chip.classList.add('warn'); badge.classList.add('warn'); badge.textContent='Estado normal'; }
+  if(total <= 13)      { chip.classList.add('bad');  badge.classList.add('bad');  badge.textContent='Avisa al staff'; }
+  else if(total <= 20) { chip.classList.add('warn'); badge.classList.add('warn'); badge.textContent='Estado normal'; }
   else                 { chip.classList.add('good'); badge.classList.add('good'); badge.textContent='Buen estado'; }
 }
 
@@ -524,14 +546,15 @@ async function guardar() {
   const sueno  = document.getElementById('j-sueno').value;
   const fatiga = document.getElementById('j-fatiga').value;
   const dolor  = document.getElementById('j-dolor').value;
+  const estres = document.getElementById('j-estres').value;
   const rpe    = document.getElementById('j-rpe').value;
 
-  if(!nombre)              { toast('⚠️ Escribe tu nombre');               return; }
-  if(!tipo)                { toast('⚠️ Selecciona el tipo de sesión');     return; }
-  if(!sueno||!fatiga||!dolor) { toast('⚠️ Completa las 3 escalas de bienestar'); return; }
-  if(!rpe)                 { toast('⚠️ Indica tu RPE');                   return; }
+  if(!nombre)                       { toast('⚠️ Escribe tu nombre');               return; }
+  if(!tipo)                         { toast('⚠️ Selecciona el tipo de sesión');     return; }
+  if(!sueno||!fatiga||!dolor||!estres) { toast('⚠️ Completa las 4 escalas de bienestar'); return; }
+  if(!rpe)                          { toast('⚠️ Indica tu RPE');                   return; }
 
-  const total = parseInt(sueno)+parseInt(fatiga)+parseInt(dolor);
+  const total = parseInt(sueno)+parseInt(fatiga)+parseInt(dolor)+parseInt(estres);
   const lesion = document.getElementById('j-lesion-yn').value;
   const lesionTxt = document.getElementById('j-lesion-txt').value.trim();
   const comentario = document.getElementById('j-comentario').value.trim();
@@ -548,7 +571,7 @@ async function guardar() {
         teamId: TEAM_ID,
         teamKey: TEAM_KEY,
         type: 'bienestar',
-        row: [fecha, nombre, tipo, sueno, fatiga, dolor, total, rpe, lesion, lesionTxt, comentario]
+        row: [fecha, nombre, tipo, sueno, fatiga, dolor, total, rpe, lesion, lesionTxt, comentario, estres]
       })
     });
     const data = await r.json();
@@ -576,7 +599,7 @@ function limpiar() {
   document.getElementById('j-nombre').value = '';
   document.getElementById('j-fecha').value  = hoy;
   document.getElementById('j-tipo').value   = '';
-  ['j-sueno','j-fatiga','j-dolor','j-rpe'].forEach(id=>document.getElementById(id).value='');
+  ['j-sueno','j-fatiga','j-dolor','j-estres','j-rpe'].forEach(id=>document.getElementById(id).value='');
   document.querySelectorAll('.dot').forEach(d=>d.className='dot');
   document.querySelectorAll('.rpe-btn').forEach(b=>b.className='rpe-btn');
   document.getElementById('total-chip').style.display='none';

@@ -302,9 +302,9 @@
           <div class="heatmap" id="heatmap"></div>
         </div>
         <div class="hm-legend">
-          <div class="hm-leg-item"><div class="hm-leg-dot" style="background:rgba(168,197,160,.35)"></div>Bueno (≥12)</div>
-          <div class="hm-leg-item"><div class="hm-leg-dot" style="background:rgba(201,169,110,.35)"></div>Normal (8–11)</div>
-          <div class="hm-leg-item"><div class="hm-leg-dot" style="background:rgba(192,112,112,.35)"></div>Alerta (≤7)</div>
+          <div class="hm-leg-item"><div class="hm-leg-dot" style="background:rgba(168,197,160,.35)"></div>Bueno (≥22)</div>
+          <div class="hm-leg-item"><div class="hm-leg-dot" style="background:rgba(201,169,110,.35)"></div>Normal (15–21)</div>
+          <div class="hm-leg-item"><div class="hm-leg-dot" style="background:rgba(192,112,112,.35)"></div>Alerta (≤14)</div>
           <div class="hm-leg-item"><div class="hm-leg-dot" style="background:var(--surface2);border:1px solid var(--border)"></div>Sin dato</div>
         </div>
       </div>
@@ -521,8 +521,8 @@ function avg(arr) {
 
 function wClass(total) {
   if (!total) return 'empty';
-  if (total >= 12) return 'good';
-  if (total >= 8)  return 'warn';
+  if (total >= 22) return 'good';
+  if (total >= 15) return 'warn';
   return 'bad';
 }
 
@@ -539,7 +539,7 @@ function renderKPIs(bienestar, entrenos) {
   const el = document.getElementById('kpi-bw');
   if (todayB.length) {
     const a = avg(todayB.map(r => r.total));
-    el.textContent = a.toFixed(1) + '/15';
+    el.textContent = a.toFixed(1) + '/28';
     el.className = 'kpi-value ' + wClass(a);
     document.getElementById('kpi-bw-sub').textContent = todayB.length + ' jugador(es) hoy';
   } else {
@@ -549,7 +549,7 @@ function renderKPIs(bienestar, entrenos) {
   }
 
   document.getElementById('kpi-alertas').textContent =
-    todayB.filter(r => r.total > 0 && r.total <= 7).length;
+    todayB.filter(r => r.total > 0 && r.total <= 13).length;
 
   // Only count players whose LATEST submission still reports a lesion
   const latestPerPlayer = {};
@@ -636,10 +636,11 @@ function renderHeatmap(allB) {
           tt.innerHTML = `
             <div class="tt-name">${player}</div>
             <div class="tt-row">📅 ${d}</div>
-            <div class="tt-row">🌙 Sueño: <span>${entry.sueno}/5</span></div>
-            <div class="tt-row">⚡ Fatiga: <span>${entry.fatiga}/5</span></div>
-            <div class="tt-row">💪 Dolor: <span>${entry.dolorMuscular}/5</span></div>
-            <div class="tt-row">📊 Total: <span style="font-weight:600">${entry.total}/15</span></div>
+            <div class="tt-row">🌙 Sueño: <span>${entry.sueno}/7</span></div>
+            <div class="tt-row">⚡ Fatiga: <span>${entry.fatiga}/7</span></div>
+            <div class="tt-row">💪 Dolor: <span>${entry.dolorMuscular}/7</span></div>
+            <div class="tt-row">🧠 Estrés: <span>${entry.estres || '—'}/7</span></div>
+            <div class="tt-row">📊 Hooper: <span style="font-weight:600">${entry.total}/28</span></div>
             ${entry.rpe ? `<div class="tt-row">🏃 RPE: <span>${entry.rpe}/10</span></div>` : ''}
             ${hasLesion ? `<div class="tt-row" style="color:#C07070;margin-top:4px">⚠️ ${entry.lesion}</div>` : ''}
           `;
@@ -679,8 +680,8 @@ function renderPlayerList(bienestar) {
     const e   = last[p];
     const cls = e ? wClass(e.total) : 'empty';
     const hasLesion = e && e.lesion && e.lesion.toLowerCase() !== 'no' && e.lesion !== '';
-    const dims = e ? `🌙${e.sueno} ⚡${e.fatiga} 💪${e.dolorMuscular}` : '—';
-    const score = e ? e.total + '/15' : '—';
+    const dims = e ? `🌙${e.sueno} ⚡${e.fatiga} 💪${e.dolorMuscular} 🧠${e.estres || '—'}` : '—';
+    const score = e ? e.total + '/28' : '—';
     return `<div class="player-row">
       <div>
         <div class="player-name">${p}${hasLesion ? '<span class="injury-tag">⚠️ Lesión</span>' : ''}</div>
@@ -716,16 +717,18 @@ function renderWellnessTrend(bienestar) {
   const suenios  = dates.map(d => +avg(byDate[d].map(r => r.sueno)).toFixed(2));
   const fatigas  = dates.map(d => +avg(byDate[d].map(r => r.fatiga)).toFixed(2));
   const dolores  = dates.map(d => +avg(byDate[d].map(r => r.dolorMuscular)).toFixed(2));
+  const estress  = dates.map(d => +avg(byDate[d].map(r => r.estres).filter(v => v > 0)).toFixed(2));
 
   cWellness = new Chart(ctx, {
     type: 'line',
     data: {
       labels,
       datasets: [
-        { label: 'Total (/15)', data: totals,  borderColor: '#4BA882', backgroundColor: 'rgba(75,168,130,.07)', borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#4BA882', tension: .35, yAxisID: 'y1', fill: true },
-        { label: 'Sueño (/5)', data: suenios,  borderColor: '#60a5fa', backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 2, tension: .35, yAxisID: 'y2', borderDash: [5,3] },
-        { label: 'Fatiga (/5)', data: fatigas, borderColor: '#C9A96E', backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 2, tension: .35, yAxisID: 'y2', borderDash: [5,3] },
-        { label: 'Dolor (/5)',  data: dolores, borderColor: '#C07070', backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 2, tension: .35, yAxisID: 'y2', borderDash: [5,3] },
+        { label: 'Hooper (/28)', data: totals,  borderColor: '#4BA882', backgroundColor: 'rgba(75,168,130,.07)', borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#4BA882', tension: .35, yAxisID: 'y1', fill: true },
+        { label: 'Sueño (/7)',   data: suenios,  borderColor: '#60a5fa', backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 2, tension: .35, yAxisID: 'y2', borderDash: [5,3] },
+        { label: 'Fatiga (/7)',  data: fatigas,  borderColor: '#C9A96E', backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 2, tension: .35, yAxisID: 'y2', borderDash: [5,3] },
+        { label: 'Dolor (/7)',   data: dolores,  borderColor: '#C07070', backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 2, tension: .35, yAxisID: 'y2', borderDash: [5,3] },
+        { label: 'Estrés (/7)',  data: estress,  borderColor: '#a78bfa', backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 2, tension: .35, yAxisID: 'y2', borderDash: [3,4] },
       ]
     },
     options: {
@@ -737,9 +740,9 @@ function renderWellnessTrend(bienestar) {
       },
       scales: {
         x: { grid: { color: '#1F1F24' }, ticks: { maxRotation: 0, maxTicksLimit: 14 } },
-        y1: { position: 'left',  min: 3, max: 15, grid: { color: '#1F1F24' }, ticks: { stepSize: 3 },
-              title: { display: true, text: 'Total', color: '#4BA882', font: { size: 11 } } },
-        y2: { position: 'right', min: 1, max: 5,  grid: { drawOnChartArea: false },
+        y1: { position: 'left',  min: 4, max: 28, grid: { color: '#1F1F24' }, ticks: { stepSize: 4 },
+              title: { display: true, text: 'Hooper', color: '#4BA882', font: { size: 11 } } },
+        y2: { position: 'right', min: 1, max: 7,  grid: { drawOnChartArea: false },
               title: { display: true, text: 'Sub-escala', color: '#8C8C90', font: { size: 11 } } }
       }
     }
@@ -773,12 +776,13 @@ function renderRadar(bienestar) {
   const this_ = pd.filter(r => toDate(r.fecha) >= w1s);
   const prev_ = pd.filter(r => toDate(r.fecha) >= w2s && toDate(r.fecha) < w1s);
 
-  const dims  = ['Sueño', 'Fatiga', 'Dolor Musc.', 'RPE (/2)'];
+  const dims  = ['Sueño', 'Fatiga', 'Dolor Musc.', 'Estrés', 'RPE (×0.7)'];
   const vals  = arr => [
     +avg(arr.map(r => r.sueno)).toFixed(2),
     +avg(arr.map(r => r.fatiga)).toFixed(2),
     +avg(arr.map(r => r.dolorMuscular)).toFixed(2),
-    +( avg(arr.map(r => r.rpe)) / 2 ).toFixed(2)
+    +avg(arr.map(r => r.estres).filter(v => v > 0)).toFixed(2),
+    +( avg(arr.map(r => r.rpe)) * 0.7 ).toFixed(2)
   ];
 
   cRadar = new Chart(ctx, {
@@ -794,7 +798,7 @@ function renderRadar(bienestar) {
       responsive: true, maintainAspectRatio: false,
       scales: {
         r: {
-          min: 0, max: 5,
+          min: 0, max: 7,
           grid: { color: '#26262C' }, angleLines: { color: '#26262C' },
           pointLabels: { color: '#8C8C90', font: { size: 11 } },
           ticks: { color: '#32323A', stepSize: 1, backdropColor: 'transparent' }
