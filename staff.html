@@ -66,6 +66,8 @@ body {
 .date-chip { font-size: .65rem; padding: 4px 10px; border-radius: var(--r); background: var(--surface2); border: 1px solid var(--border2); color: var(--text-mid); letter-spacing: 0.12em; text-transform: uppercase; }
 .btn-signout { padding: 5px 10px; background: transparent; border: 1px solid var(--border2); border-radius: var(--r); color: var(--text-dim); font-size: .7rem; cursor: pointer; transition: all .15s; font-family: 'Inter', sans-serif; letter-spacing: 0.08em; }
 .btn-signout:hover { border-color: var(--red); color: var(--red); }
+.btn-dash { padding: 5px 12px; background: var(--teal-dim); border: 1px solid var(--teal); border-radius: var(--r); color: var(--teal-hi); font-size: .7rem; cursor: pointer; transition: all .15s; font-family: 'Inter', sans-serif; letter-spacing: 0.08em; }
+.btn-dash:hover { background: rgba(75,168,130,.25); border-color: var(--teal-hi); }
 
 /* TAB BAR */
 .tab-bar { display: flex; padding: 0 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -326,6 +328,7 @@ textarea { width: 100%; padding: 11px 13px; resize: vertical; min-height: 90px; 
       </div>
       <div class="hdr-right">
         <div class="date-chip" id="hdr-date"></div>
+        <button class="btn-dash" onclick="openDashboard()">📊 Dashboard</button>
         <button class="btn-signout" onclick="signOut()">Salir</button>
       </div>
     </div>
@@ -570,6 +573,10 @@ function signOut() {
   localStorage.removeItem('ft_staff_key');
   TEAM_ID=''; TEAM_KEY='';
   location.reload();
+}
+
+function openDashboard() {
+  window.open('dashboard.html?team=' + encodeURIComponent(TEAM_ID) + '&key=' + encodeURIComponent(TEAM_KEY));
 }
 
 // ── TABS ──────────────────────────────────────────────
