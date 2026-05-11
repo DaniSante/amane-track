@@ -407,27 +407,40 @@ const TEAM_ID  = params.get('team') || '';
 const TEAM_KEY = params.get('key')  || '';
 const hoy = new Date().toISOString().split('T')[0];
 
-// Init
-document.getElementById('j-fecha').value = hoy;
-document.getElementById('hdr-date').textContent =
-  new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'short'}).toUpperCase();
-
-// Validate credentials
-if (!TEAM_ID || !TEAM_KEY) {
-  document.getElementById('gate').style.display = 'flex';
-  document.getElementById('g-nombre').style.display = 'none';
-  document.getElementById('gate-err').style.display = 'block';
-} else {
-  // Load team name from localStorage cache
-  const cached = localStorage.getItem('ft_team_name_' + TEAM_ID);
-  document.getElementById('team-name-hdr').textContent = cached || 'Cargando…';
-  showForm();
+function showForm() {
+  const gate = document.getElementById('gate');
+  const hdr  = document.getElementById('header');
+  const form = document.getElementById('form-content');
+  if (gate) gate.style.display = 'none';
+  if (hdr)  hdr.style.display  = 'block';
+  if (form) form.style.display = 'block';
 }
 
-function showForm() {
-  document.getElementById('gate').style.display = 'none';
-  document.getElementById('header').style.display = 'block';
-  document.getElementById('form-content').style.display = 'block';
+// Init
+try {
+  const fechaEl = document.getElementById('j-fecha');
+  if (fechaEl) fechaEl.value = hoy;
+  const hdrDateEl = document.getElementById('hdr-date');
+  if (hdrDateEl) hdrDateEl.textContent =
+    new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'short'}).toUpperCase();
+} catch(e) {}
+
+// Validate credentials
+try {
+  if (!TEAM_ID || !TEAM_KEY) {
+    document.getElementById('gate').style.display = 'flex';
+    const gnombre = document.getElementById('g-nombre');
+    if (gnombre) gnombre.style.display = 'none';
+    document.getElementById('gate-err').style.display = 'block';
+  } else {
+    const cached = localStorage.getItem('ft_team_name_' + TEAM_ID);
+    const tnhdr = document.getElementById('team-name-hdr');
+    if (tnhdr) tnhdr.textContent = cached || 'Cargando…';
+    showForm();
+  }
+} catch(e) {
+  // Si algo falla, forzar visibilidad del formulario para no quedar en negro
+  showForm();
 }
 
 // ── DOTS bienestar ──────────────────────────────────────
