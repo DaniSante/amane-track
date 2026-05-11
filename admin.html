@@ -3,65 +3,73 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FisioTrack — Administrador</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>amane track — admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --bg: #0a0e14; --surface: #12181f; --surface2: #181f28; --surface3: #1e2733;
-  --border: #252d38; --border2: #2f3d4f;
-  --lime: #a3e635; --lime-dim: #4d6e19; --lime-glow: rgba(163,230,53,.10);
-  --text: #dde5ef; --text-mid: #8a9ab0; --text-dim: #3d4f63;
-  --red: #f87171; --red-dim: #7f1d1d; --red-glow: rgba(248,113,113,.10);
-  --amber: #fbbf24; --amber-dim: #78350f; --amber-glow: rgba(251,191,36,.10);
-  --blue: #60a5fa; --blue-glow: rgba(96,165,250,.10);
-  --r: 10px; --r-lg: 14px;
+  --bg:        #111114;
+  --surface:   #18181C;
+  --surface2:  #1F1F24;
+  --surface3:  #26262C;
+  --text:      #F7F7F4;
+  --text-mid:  #C8C8C4;
+  --text-dim:  #8C8C90;
+  --border:    #26262C;
+  --border2:   #32323A;
+  --teal:      #1A4A3A;
+  --teal-hi:   #4BA882;
+  --teal-dim:  rgba(26,74,58,.15);
+  --teal-glow: rgba(75,168,130,.12);
+  --green:     #A8C5A0;
+  --amber:     #C9A96E;
+  --red:       #C07070;
+  --green-dim: rgba(168,197,160,.10);
+  --amber-dim: rgba(201,169,110,.10);
+  --red-dim:   rgba(192,112,112,.10);
+  --blue:      #60a5fa;
+  --blue-glow: rgba(96,165,250,.10);
+  --r: 2px; --r-lg: 4px;
 }
 body {
-  font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text);
+  font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  background: var(--bg); color: var(--text);
   min-height: 100vh; padding-bottom: 60px;
-  background-image: linear-gradient(rgba(163,230,53,.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(163,230,53,.02) 1px, transparent 1px);
+  background-image: linear-gradient(rgba(75,168,130,.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(75,168,130,.015) 1px, transparent 1px);
   background-size: 40px 40px;
 }
 
 /* LOGIN */
-.login-wrap {
-  min-height: 100vh; display: flex; align-items: center; justify-content: center;
-  padding: 20px;
-}
+.login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
 .login-box {
   width: 100%; max-width: 380px;
   background: var(--surface); border: 1px solid var(--border2);
-  border-radius: 20px; padding: 40px 32px;
-  box-shadow: 0 24px 64px rgba(0,0,0,.6);
+  border-radius: var(--r-lg); padding: 40px 32px;
+  box-shadow: 0 24px 64px rgba(0,0,0,.5);
 }
 .login-icon {
-  width: 56px; height: 56px; background: var(--lime); border-radius: 14px;
+  width: 56px; height: 56px; background: var(--surface2); border-radius: var(--r);
   display: flex; align-items: center; justify-content: center;
-  font-size: 1.5rem; margin: 0 auto 20px;
-  box-shadow: 0 0 30px rgba(163,230,53,.35);
+  margin: 0 auto 20px;
 }
-.login-title {
-  font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800;
-  text-align: center; margin-bottom: 6px;
-}
-.login-sub { font-size: .82rem; color: var(--text-dim); text-align: center; margin-bottom: 28px; }
+.login-title { font-size: 1.1rem; font-weight: 200; letter-spacing: 0.28em; text-align: center; margin-bottom: 6px; text-transform: lowercase; }
+.login-sub { font-size: .72rem; color: var(--text-dim); text-align: center; margin-bottom: 28px; letter-spacing: 0.16em; text-transform: uppercase; }
 .login-box input {
   width: 100%; padding: 12px 14px; background: var(--surface2);
-  border: 1px solid var(--border2); border-radius: 10px;
-  color: var(--text); font-family: 'DM Sans', sans-serif; font-size: .95rem;
+  border: 1px solid var(--border2); border-radius: var(--r);
+  color: var(--text); font-family: 'Inter', sans-serif; font-size: .92rem;
   margin-bottom: 12px; transition: all .15s;
 }
-.login-box input:focus { outline: none; border-color: var(--lime); box-shadow: 0 0 0 3px var(--lime-glow); }
+.login-box input:focus { outline: none; border-color: var(--teal-hi); box-shadow: 0 0 0 3px var(--teal-glow); }
 .btn-login {
-  width: 100%; padding: 13px; background: var(--lime); color: var(--bg);
-  border: none; border-radius: 10px; font-family: 'Syne', sans-serif;
-  font-size: .95rem; font-weight: 800; cursor: pointer; transition: all .15s;
-  box-shadow: 0 0 20px rgba(163,230,53,.2);
+  width: 100%; padding: 13px; background: var(--teal); color: var(--text);
+  border: 1px solid var(--teal-hi); border-radius: var(--r);
+  font-family: 'Inter', sans-serif; font-size: .82rem; font-weight: 500;
+  cursor: pointer; transition: all .15s; letter-spacing: 0.14em; text-transform: uppercase;
 }
-.btn-login:hover { background: #bef264; box-shadow: 0 0 30px rgba(163,230,53,.35); }
-.login-err { font-size: .8rem; color: var(--red); text-align: center; margin-top: 10px; display: none; }
+.btn-login:hover { background: #1f5a47; }
+.login-err { font-size: .78rem; color: var(--red); text-align: center; margin-top: 10px; display: none; letter-spacing: 0.04em; }
 
 /* MAIN PANEL */
 .main { display: none; max-width: 860px; margin: 0 auto; padding: 24px 16px; }
@@ -69,156 +77,140 @@ body {
 /* HEADER */
 .panel-hdr {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 18px 24px; background: rgba(10,14,20,.9);
+  padding: 18px 24px; background: rgba(17,17,20,.92);
   backdrop-filter: blur(20px); border-bottom: 1px solid var(--border);
   position: sticky; top: 0; z-index: 50; margin: 0 -16px 24px;
 }
 .hdr-brand { display: flex; align-items: center; gap: 12px; }
 .hdr-icon {
-  width: 34px; height: 34px; background: var(--lime); border-radius: 8px;
-  display: flex; align-items: center; justify-content: center; font-size: 1rem;
-  box-shadow: 0 0 16px rgba(163,230,53,.3);
+  width: 34px; height: 34px; background: var(--surface2); border-radius: var(--r);
+  display: flex; align-items: center; justify-content: center;
 }
-.hdr-title { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 800; }
-.hdr-role { font-size: .68rem; color: var(--text-dim); letter-spacing: 1.5px; text-transform: uppercase; }
+.hdr-title { font-size: 0.85rem; font-weight: 200; letter-spacing: 0.22em; text-transform: lowercase; }
+.hdr-role { font-size: .65rem; color: var(--text-dim); letter-spacing: 0.18em; text-transform: uppercase; margin-top: 2px; }
 .btn-logout {
   padding: 7px 14px; background: var(--surface2); border: 1px solid var(--border2);
-  border-radius: 8px; color: var(--text-mid); font-family: 'DM Sans', sans-serif;
-  font-size: .8rem; cursor: pointer; transition: all .15s;
+  border-radius: var(--r); color: var(--text-mid); font-family: 'Inter', sans-serif;
+  font-size: .78rem; cursor: pointer; transition: all .15s; letter-spacing: 0.08em;
 }
-.btn-logout:hover { border-color: var(--red-dim); color: var(--red); }
+.btn-logout:hover { border-color: var(--red); color: var(--red); }
 
 /* STATS */
 .stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 24px; }
-.scard {
-  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 18px;
-}
-.scard-lbl { font-size: .65rem; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px; }
-.scard-val { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800; }
+.scard { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 18px; }
+.scard-lbl { font-size: .62rem; font-weight: 400; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px; }
+.scard-val { font-size: 2rem; font-weight: 200; letter-spacing: -0.02em; }
 
 /* CREATE TEAM */
 .create-card {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--r-lg); padding: 24px; margin-bottom: 24px;
 }
-.create-title {
-  font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; margin-bottom: 18px;
-  display: flex; align-items: center; gap: 8px;
-}
+.create-title { font-size: .88rem; font-weight: 500; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; letter-spacing: 0.06em; }
 .create-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
 .create-row input {
   flex: 1; min-width: 200px; padding: 11px 14px;
-  background: var(--surface2); border: 1px solid var(--border2); border-radius: 10px;
-  color: var(--text); font-family: 'DM Sans', sans-serif; font-size: .9rem; transition: all .15s;
+  background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--r);
+  color: var(--text); font-family: 'Inter', sans-serif; font-size: .9rem; transition: all .15s;
 }
-.create-row input:focus { outline: none; border-color: var(--lime); box-shadow: 0 0 0 3px var(--lime-glow); }
+.create-row input:focus { outline: none; border-color: var(--teal-hi); box-shadow: 0 0 0 3px var(--teal-glow); }
 .btn-create {
-  padding: 11px 22px; background: var(--lime); color: var(--bg);
-  border: none; border-radius: 10px; font-family: 'Syne', sans-serif;
-  font-size: .88rem; font-weight: 800; cursor: pointer; white-space: nowrap;
-  transition: all .15s; box-shadow: 0 0 16px rgba(163,230,53,.2);
+  padding: 11px 22px; background: var(--teal); color: var(--text);
+  border: 1px solid var(--teal-hi); border-radius: var(--r);
+  font-family: 'Inter', sans-serif; font-size: .8rem; font-weight: 500;
+  cursor: pointer; white-space: nowrap; transition: all .15s;
+  letter-spacing: 0.12em; text-transform: uppercase;
 }
-.btn-create:hover { background: #bef264; }
+.btn-create:hover { background: #1f5a47; }
 .btn-create:disabled { opacity: .5; cursor: not-allowed; }
 
 /* RESULT BOX */
 .result-box {
   display: none; margin-top: 18px; padding: 18px;
-  background: var(--surface2); border: 1px solid var(--lime-dim);
+  background: var(--surface2); border: 1px solid var(--teal);
   border-radius: var(--r); animation: fadeUp .2s ease;
 }
-.result-title {
-  font-family: 'Syne', sans-serif; font-size: .82rem; font-weight: 700;
-  color: var(--lime); margin-bottom: 14px; display: flex; align-items: center; gap: 6px;
-}
+.result-title { font-size: .8rem; font-weight: 500; color: var(--teal-hi); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; letter-spacing: 0.1em; text-transform: uppercase; }
 .link-row { margin-bottom: 10px; }
-.link-lbl { font-size: .7rem; color: var(--text-dim); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; }
+.link-lbl { font-size: .65rem; color: var(--text-dim); font-weight: 400; letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 5px; }
 .link-val {
-  font-family: 'JetBrains Mono', monospace; font-size: .75rem; color: var(--blue);
-  background: var(--surface); border: 1px solid var(--border2); border-radius: 7px;
+  font-size: .75rem; color: var(--blue);
+  background: var(--surface); border: 1px solid var(--border2); border-radius: var(--r);
   padding: 8px 12px; word-break: break-all; display: flex; align-items: center; gap: 8px;
 }
 .btn-copy-link {
   flex-shrink: 0; padding: 4px 10px; background: var(--surface3);
-  border: 1px solid var(--border2); border-radius: 5px;
+  border: 1px solid var(--border2); border-radius: var(--r);
   color: var(--text-mid); font-size: .72rem; cursor: pointer; transition: all .13s;
-  font-family: 'DM Sans', sans-serif; font-weight: 600;
+  font-family: 'Inter', sans-serif; font-weight: 500; letter-spacing: 0.06em;
 }
-.btn-copy-link:hover { border-color: var(--lime-dim); color: var(--lime); }
+.btn-copy-link:hover { border-color: var(--teal); color: var(--teal-hi); }
 
 /* TEAM LIST */
-.teams-title {
-  font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700;
-  margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
-}
+.teams-title { font-size: .88rem; font-weight: 500; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
 .team-card {
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
   margin-bottom: 10px; overflow: hidden; transition: border-color .2s;
 }
 .team-card:hover { border-color: var(--border2); }
-.team-top {
-  display: flex; align-items: center; padding: 16px 20px; gap: 14px;
-  cursor: pointer;
-}
+.team-top { display: flex; align-items: center; padding: 16px 20px; gap: 14px; cursor: pointer; }
 .team-num {
-  width: 40px; height: 40px; border-radius: 10px; background: var(--surface2);
-  border: 1px solid var(--border2); font-family: 'Syne', sans-serif;
-  font-size: .85rem; font-weight: 800; color: var(--lime);
+  width: 40px; height: 40px; border-radius: var(--r); background: var(--surface2);
+  border: 1px solid var(--border2);
+  font-size: .85rem; font-weight: 500; color: var(--teal-hi);
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .team-info { flex: 1; }
-.team-name { font-size: .95rem; font-weight: 700; }
-.team-id { font-family: 'JetBrains Mono', monospace; font-size: .68rem; color: var(--text-dim); margin-top: 2px; }
-.team-status {
-  padding: 5px 12px; border-radius: 20px; font-size: .73rem; font-weight: 700; border: 1px solid;
-}
-.ts-active { background: var(--lime-glow); border-color: var(--lime-dim); color: var(--lime); }
-.ts-inactive { background: var(--red-glow); border-color: var(--red-dim); color: var(--red); }
+.team-name { font-size: .92rem; font-weight: 500; }
+.team-id { font-size: .68rem; color: var(--text-dim); margin-top: 2px; letter-spacing: 0.1em; }
+.team-status { padding: 4px 10px; border-radius: var(--r); font-size: .7rem; font-weight: 500; border: 1px solid; letter-spacing: 0.1em; text-transform: uppercase; }
+.ts-active { background: var(--teal-dim); border-color: var(--teal); color: var(--teal-hi); }
+.ts-inactive { background: var(--red-dim); border-color: var(--red); color: var(--red); }
 
-.team-detail {
-  display: none; padding: 0 20px 18px; border-top: 1px solid var(--border);
-}
+.team-detail { display: none; padding: 0 20px 18px; border-top: 1px solid var(--border); }
 .team-detail.open { display: block; }
 .team-detail-inner { padding-top: 14px; display: flex; flex-direction: column; gap: 10px; }
-.detail-link-lbl { font-size: .68rem; color: var(--text-dim); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+.detail-link-lbl { font-size: .65rem; color: var(--text-dim); font-weight: 400; letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 4px; }
 .detail-link-val {
-  font-family: 'JetBrains Mono', monospace; font-size: .72rem; color: var(--blue);
-  background: var(--surface2); border: 1px solid var(--border2); border-radius: 6px;
+  font-size: .72rem; color: var(--blue);
+  background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--r);
   padding: 7px 10px; word-break: break-all; cursor: pointer; transition: all .13s;
 }
 .detail-link-val:hover { border-color: var(--blue); }
-.team-actions { display: flex; gap: 8px; margin-top: 4px; }
+.team-actions { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
 .btn-toggle {
-  padding: 8px 16px; border-radius: 8px; font-family: 'DM Sans', sans-serif;
-  font-size: .82rem; font-weight: 700; cursor: pointer; border: 1px solid; transition: all .15s;
+  padding: 7px 14px; border-radius: var(--r); font-family: 'Inter', sans-serif;
+  font-size: .78rem; font-weight: 500; cursor: pointer; border: 1px solid; transition: all .15s;
+  letter-spacing: 0.08em; text-transform: uppercase;
 }
-.btn-toggle-off { background: var(--red-glow); border-color: var(--red-dim); color: var(--red); }
-.btn-toggle-off:hover { background: rgba(248,113,113,.2); }
-.btn-toggle-on  { background: var(--lime-glow); border-color: var(--lime-dim); color: var(--lime); }
-.btn-toggle-on:hover  { background: rgba(163,230,53,.2); }
+.btn-toggle-off { background: var(--red-dim); border-color: var(--red); color: var(--red); }
+.btn-toggle-off:hover { background: rgba(192,112,112,.2); }
+.btn-toggle-on  { background: var(--teal-dim); border-color: var(--teal); color: var(--teal-hi); }
+.btn-toggle-on:hover { background: rgba(75,168,130,.2); }
 .btn-copy-wa {
-  padding: 8px 16px; border-radius: 8px; font-family: 'DM Sans', sans-serif;
-  font-size: .82rem; font-weight: 700; cursor: pointer;
+  padding: 7px 14px; border-radius: var(--r); font-family: 'Inter', sans-serif;
+  font-size: .78rem; font-weight: 500; cursor: pointer;
   background: var(--blue-glow); border: 1px solid #1e3a5f; color: var(--blue);
-  transition: all .15s;
+  transition: all .15s; letter-spacing: 0.08em; text-transform: uppercase;
 }
 .btn-copy-wa:hover { background: rgba(96,165,250,.2); }
 
 /* MISC */
 .sec-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
 .sec-line { flex: 1; height: 1px; background: linear-gradient(90deg, var(--border2), transparent); }
-.loading { text-align: center; padding: 40px; color: var(--text-dim); font-size: .9rem; }
+.loading { text-align: center; padding: 40px; color: var(--text-dim); font-size: .88rem; letter-spacing: 0.06em; }
 @keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
 @keyframes spin { to { transform: rotate(360deg); } }
-.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border2); border-top-color: var(--lime); border-radius: 50%; animation: spin .6s linear infinite; }
+.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border2); border-top-color: var(--teal-hi); border-radius: 50%; animation: spin .6s linear infinite; }
 
 /* TOAST */
 #toast {
   position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(12px);
   background: var(--surface); border: 1px solid var(--border2); color: var(--text);
-  padding: 11px 20px; border-radius: 30px; font-size: .84rem; font-weight: 500;
-  box-shadow: 0 8px 32px rgba(0,0,0,.6); opacity: 0;
+  padding: 11px 20px; border-radius: var(--r); font-size: .82rem; font-weight: 400;
+  box-shadow: 0 8px 32px rgba(0,0,0,.5); opacity: 0;
   transition: opacity .22s, transform .22s; pointer-events: none; z-index: 999;
+  letter-spacing: 0.04em;
 }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
@@ -228,12 +220,25 @@ input[type="password"] { -webkit-appearance: none; }
 </head>
 <body>
 
+<svg width="0" height="0" style="position:absolute;" aria-hidden="true">
+  <defs>
+    <mask id="amane-bar">
+      <rect width="24" height="24" fill="white"/>
+      <line x1="2.5" y1="16" x2="21.5" y2="16" stroke="black" stroke-width="1.8" stroke-linecap="round"/>
+    </mask>
+  </defs>
+</svg>
+
 <!-- LOGIN -->
 <div class="login-wrap" id="login-wrap">
   <div class="login-box">
-    <div class="login-icon">🛡️</div>
-    <div class="login-title">FisioTrack Admin</div>
-    <div class="login-sub">Panel de gestión de equipos</div>
+    <div class="login-icon">
+      <svg viewBox="0 0 24 24" width="44" height="44" fill="none">
+        <path d="M 12 3 L 21 21 L 3 21 Z" fill="#F7F7F4" mask="url(#amane-bar)"/>
+      </svg>
+    </div>
+    <div class="login-title">amane track</div>
+    <div class="login-sub">Acceso restringido</div>
     <input type="password" id="admin-pass" placeholder="Contraseña de administrador"
       onkeydown="if(event.key==='Enter')doLogin()">
     <button class="btn-login" onclick="doLogin()">Acceder</button>
@@ -245,10 +250,14 @@ input[type="password"] { -webkit-appearance: none; }
 <div class="main" id="main-panel">
   <div class="panel-hdr">
     <div class="hdr-brand">
-      <div class="hdr-icon">🛡️</div>
+      <div class="hdr-icon">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
+          <path d="M 12 3 L 21 21 L 3 21 Z" fill="#F7F7F4" mask="url(#amane-bar)"/>
+        </svg>
+      </div>
       <div>
-        <div class="hdr-title">FisioTrack Admin</div>
-        <div class="hdr-role">Panel de administración</div>
+        <div class="hdr-title">amane track</div>
+        <div class="hdr-role">Administrador</div>
       </div>
     </div>
     <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
@@ -262,7 +271,7 @@ input[type="password"] { -webkit-appearance: none; }
     </div>
     <div class="scard">
       <div class="scard-lbl">Activos</div>
-      <div class="scard-val" id="st-active" style="color:var(--lime)">—</div>
+      <div class="scard-val" id="st-active" style="color:var(--teal-hi)">—</div>
     </div>
     <div class="scard">
       <div class="scard-lbl">Inactivos</div>
@@ -272,22 +281,22 @@ input[type="password"] { -webkit-appearance: none; }
 
   <!-- Create team -->
   <div class="create-card">
-    <div class="create-title">➕ Crear nuevo equipo</div>
+    <div class="create-title">Crear nuevo equipo</div>
     <div class="create-row">
       <input type="text" id="team-name-inp" placeholder="Nombre del equipo (ej. RC Deportivo Sub-23)"
         onkeydown="if(event.key==='Enter')createTeam()">
       <button class="btn-create" id="btn-create" onclick="createTeam()">Crear equipo</button>
     </div>
     <div class="result-box" id="result-box">
-      <div class="result-title">✅ Equipo creado correctamente</div>
+      <div class="result-title">Equipo creado correctamente</div>
       <div class="link-row">
-        <div class="link-lbl">🔗 Link para JUGADORES — enviar por WhatsApp</div>
+        <div class="link-lbl">Link para jugadores — enviar por WhatsApp</div>
         <div class="link-val"><span id="r-player-url" style="flex:1"></span>
           <button class="btn-copy-link" onclick="copyText(document.getElementById('r-player-url').textContent,'Link jugador copiado')">Copiar</button>
         </div>
       </div>
       <div class="link-row">
-        <div class="link-lbl">🛡️ Link para STAFF TÉCNICO</div>
+        <div class="link-lbl">Link para staff técnico</div>
         <div class="link-val"><span id="r-staff-url" style="flex:1"></span>
           <button class="btn-copy-link" onclick="copyText(document.getElementById('r-staff-url').textContent,'Link staff copiado')">Copiar</button>
         </div>
@@ -297,9 +306,9 @@ input[type="password"] { -webkit-appearance: none; }
 
   <!-- Teams list -->
   <div class="sec-head">
-    <div style="font-family:'Syne',sans-serif;font-size:.95rem;font-weight:700">Equipos registrados</div>
+    <div style="font-size:.88rem;font-weight:500">Equipos registrados</div>
     <div class="sec-line"></div>
-    <button onclick="loadTeams()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:.8rem;padding:4px 8px;">↻ Actualizar</button>
+    <button onclick="loadTeams()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:.78rem;padding:4px 8px;letter-spacing:0.08em;">↻ Actualizar</button>
   </div>
   <div id="teams-list"><div class="loading"><span class="spinner"></span></div></div>
 </div>
@@ -399,11 +408,11 @@ function renderTeams() {
             <div class="detail-link-val" onclick="copyText('${staffUrl}','Link staff copiado')">${staffUrl}</div>
           </div>
           <div class="team-actions">
-            <button class="btn-copy-wa" onclick="copyWA('${playerUrl}','${t.name}')">📱 Copiar mensaje WhatsApp</button>
+            <button class="btn-copy-wa" onclick="copyWA('${playerUrl}','${t.name}')">📱 Mensaje WhatsApp</button>
             ${t.active
-              ? `<button class="btn-toggle btn-toggle-off" onclick="toggleTeam('${t.teamId}')">🔴 Desactivar equipo</button>`
-              : `<button class="btn-toggle btn-toggle-on"  onclick="toggleTeam('${t.teamId}')">🟢 Activar equipo</button>`}
-            <a class="btn-toggle" style="background:rgba(96,165,250,.1);border-color:#60a5fa;color:#60a5fa;text-decoration:none;display:inline-flex;align-items:center;gap:6px" href="${BASE_URL}dashboard.html?team=${t.teamId}&adminPw=${adminPass}" target="_blank">📊 Dashboard</a>
+              ? `<button class="btn-toggle btn-toggle-off" onclick="toggleTeam('${t.teamId}')">Desactivar equipo</button>`
+              : `<button class="btn-toggle btn-toggle-on"  onclick="toggleTeam('${t.teamId}')">Activar equipo</button>`}
+            <a class="btn-toggle" style="background:rgba(96,165,250,.1);border-color:#60a5fa;color:#60a5fa;text-decoration:none;display:inline-flex;align-items:center;gap:6px" href="${BASE_URL}dashboard.html?team=${t.teamId}&adminPw=${adminPass}" target="_blank">Dashboard</a>
           </div>
         </div>
       </div>
@@ -425,7 +434,7 @@ async function toggleTeam(teamId) {
 }
 
 function copyWA(url, name) {
-  const msg = `⚽ *FisioTrack — ${name}*\n\nHola equipo 👋\n\nAquí tenéis el enlace para vuestro formulario de seguimiento físico diario. Rellenadlo cada día antes del entrenamiento o partido:\n\n${url}\n\n📌 Guardad este enlace en vuestro móvil.`;
+  const msg = `*amane track — ${name}*\n\nHola equipo 👋\n\nAquí tenéis el enlace para vuestro formulario de seguimiento físico diario. Rellenadlo cada día antes del entrenamiento o partido:\n\n${url}\n\n📌 Guardad este enlace en vuestro móvil.`;
   copyText(msg, '📱 Mensaje WhatsApp copiado');
 }
 
