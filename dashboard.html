@@ -723,7 +723,7 @@ function renderHero(bienestar, bienestarFull, entrenos) {
   }
 
   // 3. ACWR
-  const acwrVal = computeTeamACWR(bienestarFull.filter(r => r.contexto!=='rehab'), rawData.entrenos);
+  const acwrVal = computeTeamACWR(rawData.bienestar.filter(r => r.contexto!=='rehab'), rawData.entrenos);
   const acwrEl  = document.getElementById('h-acwr');
   const acwrSub = document.getElementById('h-acwr-sub');
   const acwrBadge = document.getElementById('h-acwr-badge');
@@ -857,7 +857,7 @@ function computePlayerStats(bienestarFull, entrenos) {
     const lastDate = latest ? fmtDate(dk(latest.fecha)) : '—';
     const isRehab  = curr.some(r=>r.contexto==='rehab');
     const lesion   = latest && latest.lesion && latest.lesion!=='N' && latest.lesion.toLowerCase()!=='no'
-      ? (latest.lesionTxt || latest.lesion) : '';
+      ? (latest.descripcionLesion && latest.descripcionLesion.trim() ? latest.descripcionLesion : 'Lesión activa') : '';
 
     const alertas  = curr.filter(r=>r.total>0&&r.total<=13).length;
     const alertPct = curr.length ? alertas/curr.length : 0;
