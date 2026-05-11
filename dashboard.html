@@ -4,414 +4,457 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>amane track — analytics</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     :root {
-      --bg:        #111114;
-      --surface:   #18181C;
-      --surface2:  #1F1F24;
-      --surface3:  #26262C;
-      --text:      #F7F7F4;
-      --text-mid:  #C8C8C4;
-      --text-dim:  #8C8C90;
-      --border:    #26262C;
-      --border2:   #32323A;
-      --teal:      #1A4A3A;
-      --teal-hi:   #4BA882;
-      --teal-dim:  rgba(26,74,58,.15);
-      --teal-glow: rgba(75,168,130,.12);
-      --green:     #A8C5A0;
-      --amber:     #C9A96E;
-      --red:       #C07070;
-      --green-dim: rgba(168,197,160,.10);
-      --amber-dim: rgba(201,169,110,.10);
-      --red-dim:   rgba(192,112,112,.10);
-      --blue:      #60a5fa;
-      --r: 2px; --r-lg: 4px;
+      --bg:         #0B0B0E;
+      --surface:    #131318;
+      --surface2:   #191920;
+      --surface3:   #202028;
+      --text:       #EEEEE8;
+      --text-mid:   #B8B8B2;
+      --text-dim:   #76767E;
+      --border:     #1E1E26;
+      --border2:    #2A2A36;
+      --teal:       #1A4A3A;
+      --teal-hi:    #4BA882;
+      --teal-dim:   rgba(26,74,58,.22);
+      --teal-glow:  rgba(75,168,130,.14);
+      --green:      #A8C5A0;
+      --amber:      #C9A96E;
+      --amber-dim:  rgba(201,169,110,.14);
+      --amber-glow: rgba(201,169,110,.08);
+      --red:        #C07070;
+      --red-dim:    rgba(192,112,112,.14);
+      --red-glow:   rgba(192,112,112,.08);
+      --blue:       #60a5fa;
+      --r: 2px; --r-lg: 3px;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: var(--bg); color: var(--text); font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; min-height: 100vh; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; }
 
     /* ── LOADING ── */
     .loading-overlay {
       position: fixed; inset: 0; background: var(--bg);
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      z-index: 999;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999;
     }
-    .spinner {
-      width: 48px; height: 48px; border: 2px solid var(--border2);
-      border-top-color: var(--teal-hi); border-radius: 50%;
-      animation: spin .8s linear infinite; margin-bottom: 16px;
-    }
+    .spinner { width: 40px; height: 40px; border: 1px solid var(--border2); border-top-color: var(--teal-hi); border-radius: 50%; animation: spin .8s linear infinite; margin-bottom: 16px; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-text { font-size: .78rem; color: var(--text-dim); letter-spacing: 0.12em; text-transform: uppercase; }
+    .loading-text { font-size: .7rem; color: var(--text-dim); letter-spacing: .18em; text-transform: uppercase; }
 
     /* ── HEADER ── */
     .header {
       position: sticky; top: 0; z-index: 100;
-      background: rgba(17,17,20,.92); backdrop-filter: blur(24px);
+      background: rgba(11,11,14,.95); backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--border);
-      padding: 0 24px; height: 60px;
+      height: 56px; padding: 0 24px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .hdr-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .hdr-mark {
+      width: 30px; height: 30px; background: var(--surface2); border: 1px solid var(--border2);
+      border-radius: var(--r); display: flex; align-items: center; justify-content: center;
+      font-size: .8rem; color: var(--teal-hi); font-weight: 500;
+    }
+    .hdr-name { font-size: .78rem; font-weight: 200; letter-spacing: .22em; text-transform: lowercase; }
+    .hdr-team { font-size: .6rem; color: var(--teal-hi); letter-spacing: .14em; text-transform: uppercase; margin-top: 2px; }
+
+    /* Period tabs */
+    .period-tabs { display: flex; gap: 1px; background: var(--border); border-radius: var(--r); overflow: hidden; }
+    .period-tab {
+      padding: 6px 14px; font-size: .62rem; letter-spacing: .14em; text-transform: uppercase;
+      background: var(--surface); border: none; color: var(--text-dim); cursor: pointer;
+      transition: all .15s; font-family: 'Inter', sans-serif;
+    }
+    .period-tab:hover { background: var(--surface2); color: var(--text-mid); }
+    .period-tab.active { background: var(--teal-dim); color: var(--teal-hi); }
+
+    .hdr-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .btn-back {
+      padding: 5px 12px; font-size: .62rem; letter-spacing: .1em; text-transform: uppercase;
+      background: transparent; border: 1px solid var(--border2); border-radius: var(--r);
+      color: var(--text-dim); cursor: pointer; transition: all .15s; font-family: 'Inter', sans-serif; text-decoration: none;
+    }
+    .btn-back:hover { border-color: var(--teal-hi); color: var(--teal-hi); }
+
+    /* ── HERO KPI STRIP ── */
+    .hero-strip {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      border-bottom: 1px solid var(--border);
+    }
+    .hero-kpi {
+      padding: 28px 28px 24px;
+      border-right: 1px solid var(--border);
+      position: relative; overflow: hidden;
+      transition: background .2s;
+    }
+    .hero-kpi:last-child { border-right: none; }
+    .hero-kpi::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, transparent 60%, var(--teal-glow));
+      opacity: 0; transition: opacity .3s;
+    }
+    .hero-kpi:hover::before { opacity: 1; }
+    .hero-kpi-label { font-size: .58rem; letter-spacing: .2em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px; }
+    .hero-kpi-num {
+      font-size: clamp(2.4rem, 3.5vw, 4rem); font-weight: 200;
+      line-height: 1; letter-spacing: -.04em; font-variant-numeric: tabular-nums;
+      color: var(--text);
+    }
+    .hero-kpi-num.good  { color: var(--green); }
+    .hero-kpi-num.warn  { color: var(--amber); }
+    .hero-kpi-num.bad   { color: var(--red); }
+    .hero-kpi-num.teal  { color: var(--teal-hi); }
+    .hero-kpi-sub { font-size: .65rem; color: var(--text-dim); margin-top: 6px; }
+    .hero-kpi-trend { display: inline-flex; align-items: center; gap: 3px; font-size: .62rem; margin-top: 8px; padding: 2px 6px; border-radius: var(--r); }
+    .hero-kpi-trend.up   { background: var(--teal-dim); color: var(--teal-hi); }
+    .hero-kpi-trend.down { background: var(--red-dim);  color: var(--red); }
+    .hero-kpi-trend.flat { background: var(--surface2); color: var(--text-dim); }
+
+    /* ── MAIN LAYOUT ── */
+    .main { max-width: 1440px; margin: 0 auto; padding: 0 24px 48px; }
+
+    /* ── SECTION HEADER ── */
+    .sec-hdr {
       display: flex; align-items: center; justify-content: space-between;
+      padding: 28px 0 16px; gap: 12px;
     }
-    .header-brand { display: flex; align-items: center; gap: 12px; }
-    .header-mark {
-      width: 34px; height: 34px; border-radius: var(--r);
-      background: var(--surface2); display: flex; align-items: center; justify-content: center;
+    .sec-hdr-left { display: flex; align-items: center; gap: 12px; }
+    .sec-title { font-size: .65rem; letter-spacing: .2em; text-transform: uppercase; color: var(--text-dim); }
+    .sec-count { font-size: .6rem; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--r); padding: 2px 8px; color: var(--text-dim); }
+    .sec-actions { display: flex; align-items: center; gap: 8px; }
+
+    /* ── BUTTONS ── */
+    .btn-ghost {
+      padding: 7px 14px; font-size: .68rem; letter-spacing: .1em; text-transform: uppercase;
+      background: transparent; border: 1px solid var(--border2); border-radius: var(--r);
+      color: var(--text-dim); cursor: pointer; transition: all .15s; font-family: 'Inter', sans-serif;
     }
-    .header-title { font-size: 0.85rem; font-weight: 200; letter-spacing: 0.22em; text-transform: lowercase; }
-    .header-sub { font-size: .65rem; color: var(--text-dim); margin-top: 2px; letter-spacing: 0.16em; text-transform: uppercase; }
-    .team-chip {
-      font-size: .65rem; letter-spacing: 0.14em; text-transform: uppercase;
+    .btn-ghost:hover { border-color: var(--text-dim); color: var(--text); }
+    .btn-teal {
+      padding: 7px 16px; font-size: .68rem; letter-spacing: .1em; text-transform: uppercase;
       background: var(--teal-dim); border: 1px solid var(--teal); border-radius: var(--r);
-      padding: 4px 12px; color: var(--teal-hi);
+      color: var(--teal-hi); cursor: pointer; transition: all .15s; font-family: 'Inter', sans-serif;
     }
+    .btn-teal:hover { background: rgba(75,168,130,.28); border-color: var(--teal-hi); }
+    .btn-teal:disabled { opacity: .4; cursor: default; }
 
-    /* ── LAYOUT ── */
-    .main { max-width: 1400px; margin: 0 auto; padding: 24px; }
+    /* ── API KEY ROW ── */
+    .apikey-row {
+      display: flex; gap: 8px; align-items: center;
+      background: var(--surface); border: 1px solid var(--border2);
+      border-radius: var(--r-lg); padding: 12px 16px; margin-bottom: 16px;
+    }
+    .apikey-row input {
+      flex: 1; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--r);
+      color: var(--text); font-size: .82rem; padding: 8px 12px; font-family: 'Inter', sans-serif;
+    }
+    .apikey-row input:focus { outline: none; border-color: var(--teal-hi); }
+    .apikey-label { font-size: .62rem; letter-spacing: .1em; text-transform: uppercase; color: var(--text-dim); white-space: nowrap; }
 
-    .range-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
-    .range-label { font-size: .75rem; color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; }
-    .range-btn {
-      font-size: .7rem; letter-spacing: 0.1em; text-transform: uppercase;
+    /* ── PLAYER GRID ── */
+    .player-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 10px; }
+
+    .player-card {
       background: var(--surface); border: 1px solid var(--border);
-      color: var(--text-dim); padding: 6px 14px; border-radius: var(--r);
-      cursor: pointer; transition: all .2s;
+      border-radius: var(--r-lg); border-left: 3px solid var(--border2);
+      overflow: hidden; transition: border-color .2s, box-shadow .2s;
     }
-    .range-btn:hover { border-color: var(--teal-hi); color: var(--teal-hi); }
-    .range-btn.active { background: var(--teal-dim); border-color: var(--teal); color: var(--teal-hi); }
+    .player-card.optimo  { border-left-color: var(--teal-hi);  box-shadow: -4px 0 20px var(--teal-glow); }
+    .player-card.atencion{ border-left-color: var(--amber);    box-shadow: -4px 0 20px var(--amber-glow);}
+    .player-card.riesgo  { border-left-color: var(--red);      box-shadow: -4px 0 20px var(--red-glow);  }
+    .player-card:hover   { border-color: var(--border2); }
 
-    /* ── KPI ROW ── */
-    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-    .kpi-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--r-lg); padding: 20px; transition: border-color .2s;
+    .pc-head {
+      display: flex; align-items: center; gap: 10px;
+      padding: 16px 18px 12px; border-bottom: 1px solid var(--border);
     }
-    .kpi-card:hover { border-color: var(--border2); }
-    .kpi-label { font-size: .65rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.16em; margin-bottom: 8px; }
-    .kpi-value { font-size: 2rem; font-weight: 200; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-    .kpi-sub   { font-size: .7rem; color: var(--text-dim); margin-top: 5px; }
-    .kpi-value.good { color: var(--green); }
-    .kpi-value.warn { color: var(--amber); }
-    .kpi-value.bad  { color: var(--red);   }
-    .kpi-value.teal { color: var(--teal-hi); }
+    .pc-name { flex: 1; font-size: .88rem; font-weight: 400; letter-spacing: .01em; }
+    .pc-badge {
+      font-size: .52rem; letter-spacing: .16em; text-transform: uppercase;
+      padding: 3px 8px; border-radius: var(--r); font-weight: 500;
+    }
+    .pc-badge.optimo  { background: var(--teal-dim);  color: var(--teal-hi); border: 1px solid var(--teal); }
+    .pc-badge.atencion{ background: var(--amber-dim); color: var(--amber);  border: 1px solid rgba(201,169,110,.3); }
+    .pc-badge.riesgo  { background: var(--red-dim);   color: var(--red);    border: 1px solid rgba(192,112,112,.3); }
+    .pc-score { font-size: 1.4rem; font-weight: 200; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+    .pc-score.good { color: var(--green); }
+    .pc-score.warn { color: var(--amber); }
+    .pc-score.bad  { color: var(--red);   }
 
-    /* ── CARDS ── */
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; }
-    .card-header {
-      padding: 16px 20px; border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .card-title { font-size: .88rem; font-weight: 500; }
-    .card-subtitle { font-size: .7rem; color: var(--text-dim); margin-top: 2px; }
-    .card-body { padding: 20px; }
-    .badge {
-      font-size: .62rem; letter-spacing: 0.1em; text-transform: uppercase;
-      padding: 3px 9px; border-radius: var(--r); border: 1px solid;
-    }
-    .badge-teal  { color: var(--teal-hi);  border-color: var(--teal);               background: var(--teal-dim); }
-    .badge-red   { color: var(--red);      border-color: rgba(192,112,112,.3);       background: var(--red-dim); }
-    .badge-amber { color: var(--amber);    border-color: rgba(201,169,110,.3);       background: var(--amber-dim); }
+    .pc-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); }
+    .pc-metric { background: var(--surface); padding: 10px 14px; }
+    .pc-metric-label { font-size: .52rem; letter-spacing: .14em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 4px; }
+    .pc-metric-val   { font-size: .92rem; font-weight: 300; font-variant-numeric: tabular-nums; }
+    .pc-metric-val.good { color: var(--green); }
+    .pc-metric-val.warn { color: var(--amber); }
+    .pc-metric-val.bad  { color: var(--red); }
+    .pc-metric-bar { height: 2px; background: var(--border2); border-radius: 1px; margin-top: 5px; }
+    .pc-metric-fill { height: 100%; border-radius: 1px; background: var(--teal-hi); transition: width .4s; }
+    .pc-metric-fill.warn { background: var(--amber); }
+    .pc-metric-fill.bad  { background: var(--red); }
 
-    /* ── GRID HELPERS ── */
-    .grid-heatmap { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 24px; }
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
-    .full   { margin-bottom: 24px; }
-    .chart-wrap { position: relative; }
+    .pc-footer { padding: 10px 18px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .pc-trend { font-size: .62rem; color: var(--text-dim); }
+    .pc-trend .up   { color: var(--teal-hi); }
+    .pc-trend .down { color: var(--red); }
+    .pc-sessions { font-size: .6rem; color: var(--text-dim); }
 
-    /* ── HEATMAP ── */
-    .heatmap-scroll { overflow-x: auto; padding-bottom: 4px; }
-    .heatmap { display: grid; gap: 3px; min-width: max-content; }
-    .hm-corner { }
-    .hm-date {
-      font-size: .58rem; color: var(--text-dim); letter-spacing: 0.06em;
-      text-align: center; white-space: nowrap;
-      height: 38px; display: flex; align-items: flex-end; justify-content: center;
-      transform: rotate(-45deg); transform-origin: center;
+    /* ── AI SECTION within card ── */
+    .pc-ai { border-top: 1px solid var(--border); }
+    .pc-ai-loading {
+      padding: 16px 18px; display: flex; align-items: center; gap: 10px;
+      font-size: .7rem; color: var(--text-dim); letter-spacing: .08em;
     }
-    .hm-player {
-      font-size: .72rem; color: var(--text-dim); white-space: nowrap;
-      display: flex; align-items: center; padding-right: 8px;
+    .pc-ai-loading .mini-spin { width: 14px; height: 14px; border: 1px solid var(--border2); border-top-color: var(--teal-hi); border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; }
+    .pc-ai-content { padding: 16px 18px; }
+    .pc-ai-risk-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .pc-ai-risk-lbl { font-size: .58rem; letter-spacing: .18em; text-transform: uppercase; color: var(--text-dim); }
+    .pc-ai-priority {
+      font-size: .52rem; letter-spacing: .12em; text-transform: uppercase;
+      padding: 2px 7px; border-radius: var(--r);
     }
-    .hm-cell {
-      width: 32px; height: 32px; border-radius: var(--r);
+    .pc-ai-priority.ALTA   { background: var(--red-dim); color: var(--red); }
+    .pc-ai-priority.MEDIA  { background: var(--amber-dim); color: var(--amber); }
+    .pc-ai-priority.BAJA   { background: var(--teal-dim); color: var(--teal-hi); }
+    .pc-ai-summary { font-size: .78rem; line-height: 1.6; color: var(--text-mid); margin-bottom: 12px; }
+    .pc-ai-plan-title { font-size: .56rem; letter-spacing: .18em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px; }
+    .pc-ai-plan-item {
+      display: flex; gap: 8px; align-items: flex-start;
+      font-size: .74rem; line-height: 1.5; color: var(--text-mid); margin-bottom: 6px;
+    }
+    .pc-ai-plan-num {
+      flex-shrink: 0; width: 18px; height: 18px; border-radius: 50%;
+      background: var(--surface2); border: 1px solid var(--border2);
       display: flex; align-items: center; justify-content: center;
-      font-size: .63rem; font-weight: 500;
-      cursor: default; transition: transform .12s; position: relative;
+      font-size: .55rem; color: var(--text-dim); font-weight: 500; margin-top: 1px;
     }
-    .hm-cell:hover { transform: scale(1.2); z-index: 20; }
-    .hm-cell.good  { background: rgba(168,197,160,.15); color: var(--green);  border: 1px solid rgba(168,197,160,.3); }
-    .hm-cell.warn  { background: rgba(201,169,110,.15); color: var(--amber);  border: 1px solid rgba(201,169,110,.3); }
-    .hm-cell.bad   { background: rgba(192,112,112,.15); color: var(--red);    border: 1px solid rgba(192,112,112,.3); }
-    .hm-cell.empty { background: var(--surface2); color: var(--border2);      border: 1px solid var(--border); }
-    .hm-legend { display: flex; gap: 16px; margin-top: 14px; flex-wrap: wrap; }
-    .hm-leg-item { display: flex; align-items: center; gap: 6px; font-size: .7rem; color: var(--text-dim); }
-    .hm-leg-dot  { width: 12px; height: 12px; border-radius: var(--r); }
+    .pc-ai-indicators { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+    .pc-ai-tag {
+      font-size: .6rem; padding: 3px 8px; border-radius: var(--r);
+      background: var(--surface2); border: 1px solid var(--border2); color: var(--text-dim);
+    }
 
-    /* ── PLAYER LIST ── */
-    .player-list { display: flex; flex-direction: column; gap: 0; }
-    .player-row {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 0; border-bottom: 1px solid var(--border);
+    /* ── CHARTS SECTION ── */
+    .charts-section { margin-top: 12px; }
+    .chart-tabs { display: flex; gap: 1px; background: var(--border); border-radius: var(--r) var(--r) 0 0; overflow: hidden; }
+    .chart-tab {
+      padding: 10px 18px; font-size: .6rem; letter-spacing: .14em; text-transform: uppercase;
+      background: var(--surface); border: none; color: var(--text-dim); cursor: pointer;
+      transition: all .15s; font-family: 'Inter', sans-serif;
     }
-    .player-row:last-child { border-bottom: none; }
-    .player-name { font-size: .85rem; font-weight: 500; }
-    .player-dims { font-size: .68rem; color: var(--text-dim); margin-top: 2px; }
-    .injury-tag { font-size: .68rem; color: var(--red); margin-left: 6px; }
-    .score-pill {
-      font-size: .72rem; font-weight: 500;
-      padding: 3px 10px; border-radius: var(--r); border: 1px solid;
+    .chart-tab:hover { color: var(--text-mid); }
+    .chart-tab.active { background: var(--surface2); color: var(--text); }
+    .chart-panel {
+      display: none; background: var(--surface); border: 1px solid var(--border);
+      border-top: none; border-radius: 0 0 var(--r-lg) var(--r-lg); padding: 24px;
     }
-    .score-pill.good  { background: rgba(168,197,160,.12); color: var(--green); border-color: rgba(168,197,160,.3); }
-    .score-pill.warn  { background: rgba(201,169,110,.12); color: var(--amber); border-color: rgba(201,169,110,.3); }
-    .score-pill.bad   { background: rgba(192,112,112,.12); color: var(--red);   border-color: rgba(192,112,112,.3); }
-    .score-pill.empty { background: var(--surface2);       color: var(--text-dim); border-color: var(--border); }
-
-    /* ── RADAR PLAYER SELECTOR ── */
-    .player-selector { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+    .chart-panel.active { display: block; }
+    .chart-wrap { position: relative; height: 260px; }
+    .chart-wrap.tall { height: 320px; }
+    .chart-two { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .chart-sub-label { font-size: .6rem; letter-spacing: .14em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 12px; }
+    .player-sel { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 14px; }
     .p-btn {
-      font-family: 'Inter', sans-serif; font-size: .72rem; letter-spacing: 0.08em;
-      background: var(--surface2); border: 1px solid var(--border);
-      color: var(--text-dim); padding: 4px 12px; border-radius: var(--r);
-      cursor: pointer; transition: all .2s;
+      padding: 4px 10px; font-size: .62rem; background: var(--surface2); border: 1px solid var(--border2);
+      border-radius: var(--r); color: var(--text-dim); cursor: pointer; transition: all .15s; font-family: 'Inter', sans-serif;
     }
-    .p-btn:hover { border-color: var(--teal-hi); color: var(--teal-hi); }
+    .p-btn:hover  { border-color: var(--text-dim); color: var(--text); }
     .p-btn.active { background: var(--teal-dim); border-color: var(--teal); color: var(--teal-hi); }
 
     /* ── ACWR LEGEND ── */
-    .acwr-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 12px; font-size: .7rem; }
-    .acwr-zone { display: flex; align-items: center; gap: 5px; color: var(--text-dim); }
-    .acwr-dot  { width: 10px; height: 10px; border-radius: 50%; }
+    .acwr-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+    .acwr-zone { display: flex; align-items: center; gap: 5px; font-size: .62rem; color: var(--text-dim); }
+    .acwr-dot  { width: 8px; height: 8px; border-radius: 50%; }
+
+    /* ── HEATMAP ── */
+    .hm-wrap { overflow-x: auto; }
+    .hm-grid { display: grid; gap: 2px; min-width: 600px; }
+    .hm-cell {
+      width: 100%; height: 24px; border-radius: 1px; cursor: default;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .6rem; color: transparent; transition: color .1s;
+    }
+    .hm-cell:hover { color: rgba(255,255,255,.7); }
+    .hm-cell.good    { background: rgba(168,197,160,.35); }
+    .hm-cell.warn    { background: rgba(201,169,110,.3); }
+    .hm-cell.bad     { background: rgba(192,112,112,.35); }
+    .hm-cell.empty   { background: var(--surface2); }
+    .hm-player { font-size: .62rem; color: var(--text-dim); display: flex; align-items: center; white-space: nowrap; overflow: hidden; }
+    .hm-date   { font-size: .55rem; color: var(--text-dim); writing-mode: vertical-rl; text-orientation: mixed; transform: rotate(180deg); white-space: nowrap; overflow: hidden; height: 24px; display: flex; align-items: center; justify-content: center; }
+    .hm-legend { display: flex; gap: 14px; margin-top: 12px; flex-wrap: wrap; }
+    .hm-leg-item { display: flex; align-items: center; gap: 6px; font-size: .62rem; color: var(--text-dim); }
+    .hm-leg-dot  { width: 10px; height: 10px; border-radius: 1px; }
+    .hm-tooltip {
+      position: fixed; z-index: 9000; display: none;
+      background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--r-lg);
+      padding: 10px 14px; font-size: .72rem; pointer-events: none; max-width: 200px;
+    }
+    .tt-name { font-weight: 500; margin-bottom: 5px; }
+    .tt-row  { color: var(--text-dim); margin-top: 2px; }
+    .tt-row span { color: var(--text); float: right; margin-left: 12px; }
 
     /* ── EMPTY STATE ── */
     .empty-state {
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      padding: 36px 20px; color: var(--text-dim); text-align: center; gap: 10px;
+      padding: 40px; text-align: center; color: var(--text-dim);
+      font-size: .78rem; letter-spacing: .06em;
     }
-    .empty-icon { font-size: 2.2rem; opacity: .3; }
-    .empty-text { font-size: .8rem; line-height: 1.5; }
+    .empty-icon { font-size: 2rem; margin-bottom: 12px; opacity: .4; }
 
-    /* ── TOOLTIP ── */
-    #hm-tooltip {
-      position: fixed; background: var(--surface2); border: 1px solid var(--border2);
-      border-radius: var(--r); padding: 10px 14px; font-size: .75rem;
-      pointer-events: none; z-index: 1000; display: none; min-width: 160px;
+    /* ── TOAST ── */
+    #toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--r-lg);
+      padding: 10px 18px; font-size: .78rem; color: var(--text-mid);
+      opacity: 0; transition: all .25s; pointer-events: none; white-space: nowrap; z-index: 9999;
     }
-    #hm-tooltip .tt-name { font-weight: 600; margin-bottom: 6px; }
-    #hm-tooltip .tt-row { color: var(--text-dim); margin-top: 3px; }
-    #hm-tooltip .tt-row span { color: var(--text); }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
     /* ── RESPONSIVE ── */
-    @media (max-width: 1000px) {
-      .grid-heatmap { grid-template-columns: 1fr; }
-      .grid-2       { grid-template-columns: 1fr; }
+    @media (max-width: 900px) {
+      .hero-strip { grid-template-columns: repeat(2, 1fr); }
+      .hero-kpi:nth-child(2) { border-right: none; }
+      .hero-kpi:nth-child(3) { border-top: 1px solid var(--border); }
+      .chart-two { grid-template-columns: 1fr; }
+      .player-grid { grid-template-columns: 1fr; }
     }
-    @media (max-width: 640px) {
-      .kpi-row { grid-template-columns: 1fr 1fr; }
-      .main    { padding: 14px; }
-      .header  { padding: 0 14px; }
+    @media (max-width: 600px) {
+      .header { padding: 0 16px; }
+      .period-tabs .period-tab { padding: 6px 10px; font-size: .56rem; }
+      .main { padding: 0 16px 40px; }
+      .hero-strip { grid-template-columns: repeat(2, 1fr); }
+      .hero-kpi { padding: 20px 16px 16px; }
+      .hero-kpi-num { font-size: 2rem; }
+      .pc-metrics { grid-template-columns: repeat(2, 1fr); }
+      .hdr-right .btn-back span { display: none; }
     }
   </style>
 </head>
 <body>
 
-<svg width="0" height="0" style="position:absolute;" aria-hidden="true">
-  <defs>
-    <mask id="amane-bar">
-      <rect width="24" height="24" fill="white"/>
-      <line x1="2.5" y1="16" x2="21.5" y2="16" stroke="black" stroke-width="1.8" stroke-linecap="round"/>
-    </mask>
-  </defs>
-</svg>
-
-<!-- Loading -->
 <div class="loading-overlay" id="loading-overlay">
   <div class="spinner"></div>
-  <div class="loading-text">Cargando datos del equipo...</div>
+  <div class="loading-text">cargando datos</div>
 </div>
 
-<!-- Tooltip heatmap -->
-<div id="hm-tooltip"></div>
-
-<!-- Header -->
-<header class="header">
-  <div class="header-brand">
-    <div class="header-mark">
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
-        <path d="M 12 3 L 21 21 L 3 21 Z" fill="#F7F7F4" mask="url(#amane-bar)"/>
-      </svg>
-    </div>
+<!-- HEADER -->
+<div class="header">
+  <div class="hdr-brand">
+    <div class="hdr-mark">△</div>
     <div>
-      <div class="header-title">amane track</div>
-      <div class="header-sub" id="header-sub">ANALYTICS · T24/25</div>
+      <div class="hdr-name">amane track</div>
+      <div class="hdr-team" id="hdr-team">—</div>
     </div>
   </div>
-  <span class="team-chip" id="team-chip">—</span>
-</header>
-
-<!-- Main -->
-<main class="main">
-
-  <!-- Date range -->
-  <div class="range-bar">
-    <span class="range-label">Período:</span>
-    <button class="range-btn" data-days="7"   onclick="setRange(7,this)">7 días</button>
-    <button class="range-btn" data-days="14"  onclick="setRange(14,this)">14 días</button>
-    <button class="range-btn" data-days="30"  onclick="setRange(30,this)">30 días</button>
-    <button class="range-btn" data-days="90"  onclick="setRange(90,this)">90 días</button>
-    <button class="range-btn active" data-days="365" onclick="setRange(365,this)">Temporada</button>
+  <div class="period-tabs">
+    <button class="period-tab active" onclick="setPeriod('semana',this)">Semana</button>
+    <button class="period-tab" onclick="setPeriod('mes',this)">Mes</button>
+    <button class="period-tab" onclick="setPeriod('trimestre',this)">Trimestre</button>
+    <button class="period-tab" onclick="setPeriod('temporada',this)">Temporada</button>
   </div>
-
-  <!-- KPIs -->
-  <div class="kpi-row">
-    <div class="kpi-card">
-      <div class="kpi-label">Bienestar equipo hoy</div>
-      <div class="kpi-value" id="kpi-bw">—</div>
-      <div class="kpi-sub" id="kpi-bw-sub">Sin datos hoy</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">Alertas hoy</div>
-      <div class="kpi-value bad" id="kpi-alertas">—</div>
-      <div class="kpi-sub">Jugadores con total ≤ 7</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">Con lesión activa</div>
-      <div class="kpi-value bad" id="kpi-lesion">—</div>
-      <div class="kpi-sub" id="kpi-lesion-sub">en el período</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">Sesiones registradas</div>
-      <div class="kpi-value teal" id="kpi-sesiones">—</div>
-      <div class="kpi-sub" id="kpi-sesiones-sub">en el período</div>
-    </div>
+  <div class="hdr-right">
+    <button class="btn-back" onclick="goStaff()">← <span>Staff</span></button>
   </div>
+</div>
 
-  <!-- Heatmap + Player list -->
-  <div class="grid-heatmap">
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Mapa de Bienestar</div>
-          <div class="card-subtitle">Puntuación total diaria por jugador (3–15)</div>
-        </div>
-        <span class="badge badge-teal">14 días</span>
-      </div>
-      <div class="card-body">
-        <div class="heatmap-scroll">
-          <div class="heatmap" id="heatmap"></div>
-        </div>
-        <div class="hm-legend">
-          <div class="hm-leg-item"><div class="hm-leg-dot" style="background:rgba(168,197,160,.35)"></div>Bueno (≥22)</div>
-          <div class="hm-leg-item"><div class="hm-leg-dot" style="background:rgba(201,169,110,.35)"></div>Normal (15–21)</div>
-          <div class="hm-leg-item"><div class="hm-leg-dot" style="background:rgba(192,112,112,.35)"></div>Alerta (≤14)</div>
-          <div class="hm-leg-item"><div class="hm-leg-dot" style="background:var(--surface2);border:1px solid var(--border)"></div>Sin dato</div>
-        </div>
-      </div>
+<!-- HERO KPI STRIP -->
+<div class="hero-strip">
+  <div class="hero-kpi">
+    <div class="hero-kpi-label">Hooper hoy</div>
+    <div class="hero-kpi-num" id="h-hooper">—</div>
+    <div class="hero-kpi-sub" id="h-hooper-sub">/ 28 máximo</div>
+    <div class="hero-kpi-trend flat" id="h-hooper-trend" style="display:none"></div>
+  </div>
+  <div class="hero-kpi">
+    <div class="hero-kpi-label">ACWR equipo</div>
+    <div class="hero-kpi-num" id="h-acwr">—</div>
+    <div class="hero-kpi-sub" id="h-acwr-sub">carga aguda / crónica</div>
+  </div>
+  <div class="hero-kpi">
+    <div class="hero-kpi-label">Alertas hoy</div>
+    <div class="hero-kpi-num" id="h-alertas">—</div>
+    <div class="hero-kpi-sub">jugadores con Hooper ≤13</div>
+  </div>
+  <div class="hero-kpi">
+    <div class="hero-kpi-label">Lesiones activas</div>
+    <div class="hero-kpi-num" id="h-lesiones">—</div>
+    <div class="hero-kpi-sub" id="h-lesiones-sub">en plantilla</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- PLAYER ANALYSIS SECTION -->
+  <div class="sec-hdr">
+    <div class="sec-hdr-left">
+      <div class="sec-title">Análisis individual</div>
+      <div class="sec-count" id="players-count">— jugadores</div>
     </div>
-
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Estado del Plantel</div>
-          <div class="card-subtitle">Último registro disponible</div>
-        </div>
-      </div>
-      <div class="card-body" style="padding:12px 20px">
-        <div class="player-list" id="player-list"></div>
-      </div>
+    <div class="sec-actions">
+      <button class="btn-ghost" id="btn-apikey" onclick="toggleApiKey()">⚙ API Key</button>
+      <button class="btn-teal" id="btn-ai" onclick="generateAI()">Generar análisis IA</button>
     </div>
   </div>
-
-  <!-- Wellness trend -->
-  <div class="full">
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Evolución del Bienestar del Equipo</div>
-          <div class="card-subtitle">Promedio diario — total, sueño, fatiga y dolor muscular</div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="chart-wrap" style="height:280px">
-          <canvas id="chart-wellness"></canvas>
-        </div>
-      </div>
-    </div>
+  <div class="apikey-row" id="apikey-row" style="display:none">
+    <span class="apikey-label">Anthropic API Key</span>
+    <input type="password" id="inp-apikey" placeholder="sk-ant-api03-…">
+    <button class="btn-teal" onclick="saveApiKey()">Guardar</button>
+  </div>
+  <div class="player-grid" id="player-grid">
+    <div class="empty-state"><div class="empty-icon">👥</div>Cargando jugadores…</div>
   </div>
 
-  <!-- Radar + ACWR -->
-  <div class="grid-2">
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Perfil Individual</div>
-          <div class="card-subtitle">Esta semana vs. semana anterior</div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="player-selector" id="player-selector"></div>
-        <div class="chart-wrap" style="height:260px">
-          <canvas id="chart-radar"></canvas>
-        </div>
-      </div>
+  <!-- CHARTS SECTION -->
+  <div class="charts-section">
+    <div class="sec-hdr" style="padding-top:20px">
+      <div class="sec-title">Datos del equipo</div>
+    </div>
+    <div class="chart-tabs">
+      <button class="chart-tab active" onclick="showChartTab('bienestar',this)">Bienestar</button>
+      <button class="chart-tab" onclick="showChartTab('carga',this)">Carga &amp; ACWR</button>
+      <button class="chart-tab" onclick="showChartTab('radar',this)">Radar</button>
+      <button class="chart-tab" onclick="showChartTab('heatmap',this)">Heatmap</button>
     </div>
 
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Carga &amp; ACWR</div>
-          <div class="card-subtitle">Ratio carga aguda/crónica — zona óptima 0.8–1.3</div>
-        </div>
+    <!-- BIENESTAR TREND -->
+    <div class="chart-panel active" id="panel-bienestar">
+      <div class="chart-wrap"><canvas id="chart-wellness"></canvas></div>
+    </div>
+
+    <!-- CARGA & ACWR -->
+    <div class="chart-panel" id="panel-carga">
+      <div class="acwr-legend">
+        <div class="acwr-zone"><div class="acwr-dot" style="background:#A8C5A0"></div>Óptima (0.8–1.3)</div>
+        <div class="acwr-zone"><div class="acwr-dot" style="background:#C9A96E"></div>Precaución (1.3–1.5)</div>
+        <div class="acwr-zone"><div class="acwr-dot" style="background:#C07070"></div>Peligro (&gt;1.5)</div>
       </div>
-      <div class="card-body">
-        <div class="acwr-legend">
-          <div class="acwr-zone"><div class="acwr-dot" style="background:#A8C5A0"></div>Óptima (0.8–1.3)</div>
-          <div class="acwr-zone"><div class="acwr-dot" style="background:#C9A96E"></div>Riesgo (1.3–1.5)</div>
-          <div class="acwr-zone"><div class="acwr-dot" style="background:#C07070"></div>Peligro (&gt;1.5)</div>
-        </div>
-        <div class="chart-wrap" style="height:230px">
-          <canvas id="chart-acwr"></canvas>
-        </div>
+      <div class="chart-wrap"><canvas id="chart-acwr"></canvas></div>
+    </div>
+
+    <!-- RADAR -->
+    <div class="chart-panel" id="panel-radar">
+      <div class="player-sel" id="player-sel"></div>
+      <div class="chart-wrap"><canvas id="chart-radar"></canvas></div>
+    </div>
+
+    <!-- HEATMAP -->
+    <div class="chart-panel" id="panel-heatmap">
+      <div class="chart-sub-label">Hooper Index diario por jugador · últimos 28 días</div>
+      <div class="hm-wrap"><div id="hm-grid" class="hm-grid"></div></div>
+      <div class="hm-legend">
+        <div class="hm-leg-item"><div class="hm-leg-dot" style="background:rgba(168,197,160,.35)"></div>Bueno (≥22)</div>
+        <div class="hm-leg-item"><div class="hm-leg-dot" style="background:rgba(201,169,110,.3)"></div>Normal (15–21)</div>
+        <div class="hm-leg-item"><div class="hm-leg-dot" style="background:rgba(192,112,112,.35)"></div>Alerta (≤14)</div>
+        <div class="hm-leg-item"><div class="hm-leg-dot" style="background:var(--surface2);border:1px solid var(--border)"></div>Sin dato</div>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- RPE por jugador -->
-  <div class="full">
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <div class="card-title">RPE por Jugador</div>
-          <div class="card-subtitle">Esfuerzo percibido promedio en el período (escala 1–10)</div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="chart-wrap" style="height:220px">
-          <canvas id="chart-rpe"></canvas>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Minutos en partidos -->
-  <div class="full" id="section-minutos" style="display:none">
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Minutos Jugados</div>
-          <div class="card-subtitle">Total por jugador en partidos del período</div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="chart-wrap" style="height:220px">
-          <canvas id="chart-minutos"></canvas>
-        </div>
-      </div>
-    </div>
-  </div>
-
-</main>
+<div class="hm-tooltip" id="hm-tooltip"></div>
+<div id="toast"></div>
 
 <script>
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxPBKNvOhqXCK1Vz7Pj0rJFLofNyIZluJmJWzeAYVrVt164TYWtmlJTN0-ap-QykPw/exec';
@@ -422,575 +465,630 @@ const TEAM_KEY = params.get('key')     || '';
 const ADMIN_PW = params.get('adminPw') || '';
 
 let rawData        = null;
-let rangeDays      = 365;
+let currentPeriod  = 'semana';
+let playerStats    = [];
+let aiAnalyses     = {};
+let activeChartTab = 'bienestar';
 let selectedPlayer = null;
+let cWellness = null, cAcwr = null, cRadar = null;
 
-let cWellness = null, cRadar = null, cAcwr = null, cRpe = null, cMinutos = null;
+Chart.defaults.color       = '#76767E';
+Chart.defaults.borderColor = '#1E1E26';
+Chart.defaults.font.family = "'Inter', sans-serif";
 
-Chart.defaults.color       = '#8C8C90';
-Chart.defaults.borderColor = '#26262C';
-Chart.defaults.font.family = "'Inter', 'Helvetica Neue', Arial, sans-serif";
-
-// ── INIT ───────────────────────────────────────────────────────────────────
-async function init() {
-  if (!TEAM_ID || (!TEAM_KEY && !ADMIN_PW)) {
-    showError('Parámetros de acceso inválidos.<br>Usa el enlace desde el panel de administración.');
-    return;
-  }
-  try {
-    const body = { action: 'get_analytics', teamId: TEAM_ID };
-    if (ADMIN_PW) body.adminPassword = ADMIN_PW;
-    else          body.teamKey = TEAM_KEY;
-
-    const res  = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(body) });
-    rawData    = await res.json();
-
-    if (!rawData.ok) throw new Error(rawData.error || 'Error desconocido');
-
-    document.getElementById('team-chip').textContent = rawData.teamName;
-    document.getElementById('header-sub').textContent = 'analytics · ' + rawData.teamName;
-    document.getElementById('loading-overlay').style.display = 'none';
-    render();
-  } catch (e) {
-    showError(e.message);
-  }
-}
-
-function showError(msg) {
-  document.getElementById('loading-overlay').innerHTML =
-    `<div style="text-align:center;color:#C07070;padding:24px">
-       <div style="font-size:2.5rem;margin-bottom:14px;opacity:.5">△</div>
-       <div style="font-size:.9rem;line-height:1.6">${msg}</div>
-     </div>`;
-}
-
-// ── RANGE ─────────────────────────────────────────────────────────────────
-function setRange(days, btn) {
-  rangeDays = days;
-  document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  render();
-}
-
-// ── RENDER ────────────────────────────────────────────────────────────────
-function render() {
-  if (!rawData) return;
-
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - rangeDays);
-  cutoff.setHours(0, 0, 0, 0);
-
-  // bienestarTeam: solo sesiones con el equipo (excluye rehab individual)
-  // bienestarFull: todos los registros (incluye rehab, para vistas individuales)
-  const bienestarFull = rawData.bienestar.filter(r => toDate(r.fecha) >= cutoff);
-  const bienestar     = bienestarFull.filter(r => r.contexto !== 'rehab');
-  const entrenos      = rawData.entrenos.filter(r => toDate(r.fecha) >= cutoff);
-  const partidosInd   = rawData.partidosInd.filter(r => toDate(r.fecha) >= cutoff);
-
-  renderKPIs(bienestar, bienestarFull, entrenos);
-  renderHeatmap(rawData.bienestar);            // siempre histórico completo
-  renderPlayerList(bienestarFull);             // selector incluye jugadores en rehab
-  renderWellnessTrend(bienestar);              // tendencia del equipo: solo equipo
-  renderRadar(bienestar);                      // radar del equipo: solo equipo
-  renderACWR(rawData.bienestar.filter(r => r.contexto !== 'rehab'), rawData.entrenos);
-  renderRPE(bienestar);                        // RPE del equipo: solo equipo
-  renderMinutos(partidosInd);
-}
-
-// ── UTILS ─────────────────────────────────────────────────────────────────
-function toDate(str) {
-  if (!str) return new Date(0);
-  const s = str.toString().split('T')[0].replace(/\//g, '-');
-  const [y, m, d] = s.split('-');
-  if (!y || !m || !d) return new Date(0);
-  return new Date(+y, +m - 1, +d);
-}
-
-function dk(d) {
-  const dt = d instanceof Date ? d : toDate(d);
-  if (isNaN(dt)) return '';
-  return dt.getFullYear() + '-' +
-    String(dt.getMonth() + 1).padStart(2, '0') + '-' +
-    String(dt.getDate()).padStart(2, '0');
-}
-
+// ── UTILITIES ─────────────────────────────────────────────
 function avg(arr) {
   const v = arr.filter(x => x != null && !isNaN(x) && x !== 0);
-  return v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0;
+  return v.length ? v.reduce((a,b) => a+b, 0) / v.length : 0;
 }
-
+function dk(d) {
+  if (!d) return '';
+  if (typeof d === 'string') return d.slice(0, 10);
+  try { return d.toISOString().slice(0, 10); } catch { return ''; }
+}
+function toDate(str) {
+  if (!str) return new Date(0);
+  const s = typeof str === 'string' ? str.slice(0,10) : dk(str);
+  const [y,m,d] = s.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+function fmtDate(dkStr) {
+  if (!dkStr) return '';
+  const [,m,d] = dkStr.split('-');
+  return d + '/' + m;
+}
 function wClass(total) {
   if (!total) return 'empty';
   if (total >= 22) return 'good';
   if (total >= 15) return 'warn';
   return 'bad';
 }
-
-function fmtDate(dkStr) {
-  const [, m, d] = dkStr.split('-');
-  return d + '/' + m;
+function mClass(val, max) {
+  const pct = val / max;
+  if (pct >= 0.7) return 'good';
+  if (pct >= 0.45) return 'warn';
+  return 'bad';
+}
+function getCtx(id) {
+  const el = document.getElementById(id);
+  return el ? el.getContext('2d') : null;
+}
+function showEmpty(canvas, icon, msg) {
+  const ctx = canvas ? canvas.getContext('2d') : null;
+  if (!ctx) return;
+  canvas.style.display = 'none';
+  const empty = canvas.parentElement.querySelector('.empty-state');
+  if (empty) { empty.innerHTML = `<div class="empty-icon">${icon}</div>${msg}`; }
+  else {
+    const e = document.createElement('div');
+    e.className = 'empty-state';
+    e.innerHTML = `<div class="empty-icon">${icon}</div>${msg}`;
+    canvas.parentElement.appendChild(e);
+  }
+}
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+function api(body) {
+  return fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(body) }).then(r => r.json());
 }
 
-// ── KPIs ──────────────────────────────────────────────────────────────────
-function renderKPIs(bienestar, bienestarFull, entrenos) {
+// ── INIT ──────────────────────────────────────────────────
+async function init() {
+  if (!TEAM_ID || (!TEAM_KEY && !ADMIN_PW)) {
+    document.getElementById('loading-overlay').innerHTML =
+      `<div style="text-align:center;color:#C07070;padding:24px"><div style="font-size:2rem;margin-bottom:12px;opacity:.5">△</div>Parámetros de acceso inválidos.<br>Usa el enlace desde el panel de staff.</div>`;
+    return;
+  }
+  try {
+    const body = { action: 'get_analytics', teamId: TEAM_ID };
+    if (ADMIN_PW) body.adminPassword = ADMIN_PW; else body.teamKey = TEAM_KEY;
+    const res  = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(body) });
+    rawData    = await res.json();
+    if (!rawData.ok) throw new Error(rawData.error || 'Error desconocido');
+    document.getElementById('hdr-team').textContent = rawData.teamName || TEAM_ID;
+    document.getElementById('loading-overlay').style.display = 'none';
+    render();
+  } catch(e) {
+    document.getElementById('loading-overlay').innerHTML =
+      `<div style="text-align:center;color:#C07070;padding:24px"><div style="font-size:2rem;margin-bottom:12px;opacity:.5">△</div>${e.message}</div>`;
+  }
+}
+
+// ── PERIOD ────────────────────────────────────────────────
+function setPeriod(period, btn) {
+  currentPeriod = period;
+  aiAnalyses = {}; // clear cached AI when period changes
+  document.querySelectorAll('.period-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+function getCutoff(period) {
+  const now = new Date(); now.setHours(0,0,0,0);
+  if (period === 'semana') {
+    const mon = new Date(now);
+    const day = mon.getDay();
+    mon.setDate(mon.getDate() - (day === 0 ? 6 : day - 1));
+    return mon;
+  }
+  if (period === 'mes') return new Date(now.getFullYear(), now.getMonth(), 1);
+  if (period === 'trimestre') { const t = new Date(now); t.setDate(t.getDate()-90); return t; }
+  if (period === 'temporada') { const s = new Date(now); s.setFullYear(s.getFullYear()-1); return s; }
+  return new Date(0);
+}
+
+function getPeriodLabel() {
+  const now = new Date();
+  if (currentPeriod === 'semana') {
+    const mon = new Date(now); const day = mon.getDay(); mon.setDate(mon.getDate()-(day===0?6:day-1));
+    return `Semana ${fmtDate(dk(mon))} – ${fmtDate(dk(now))}`;
+  }
+  if (currentPeriod === 'mes') return now.toLocaleString('es',{month:'long',year:'numeric'});
+  if (currentPeriod === 'trimestre') return 'Últimos 90 días';
+  return 'Temporada completa';
+}
+
+// ── RENDER ────────────────────────────────────────────────
+function render() {
+  if (!rawData) return;
+  const cutoff       = getCutoff(currentPeriod);
+  const bienestarFull = rawData.bienestar.filter(r => toDate(r.fecha) >= cutoff);
+  const bienestar     = bienestarFull.filter(r => r.contexto !== 'rehab');
+  const entrenos      = rawData.entrenos.filter(r => toDate(r.fecha) >= cutoff);
+
+  renderHero(bienestar, bienestarFull, entrenos);
+  playerStats = computePlayerStats(bienestarFull, entrenos);
+  renderPlayerCards(playerStats);
+  renderActiveChart(bienestar, bienestarFull, entrenos);
+}
+
+// ── HERO KPIs ─────────────────────────────────────────────
+function renderHero(bienestar, bienestarFull, entrenos) {
   const todayKey = dk(new Date());
   const todayB   = bienestar.filter(r => dk(r.fecha) === todayKey);
 
-  const el = document.getElementById('kpi-bw');
+  // Hooper hoy
+  const hooEl = document.getElementById('h-hooper');
+  const hooSub = document.getElementById('h-hooper-sub');
   if (todayB.length) {
     const a = avg(todayB.map(r => r.total));
-    el.textContent = a.toFixed(1) + '/28';
-    el.className = 'kpi-value ' + wClass(a);
-    document.getElementById('kpi-bw-sub').textContent = todayB.length + ' jugador(es) hoy';
+    hooEl.textContent = a.toFixed(1);
+    hooEl.className = 'hero-kpi-num ' + wClass(a);
+    hooSub.textContent = todayB.length + ' jugador(es) · / 28 máximo';
   } else {
-    el.textContent = '—';
-    el.className = 'kpi-value';
-    document.getElementById('kpi-bw-sub').textContent = 'Sin datos hoy';
+    hooEl.textContent = '—'; hooEl.className = 'hero-kpi-num';
+    hooSub.textContent = 'Sin datos hoy';
   }
 
-  document.getElementById('kpi-alertas').textContent =
-    todayB.filter(r => r.total > 0 && r.total <= 13).length;
+  // ACWR
+  const acwrVal = computeTeamACWR(bienestarFull.filter(r => r.contexto!=='rehab'), rawData.entrenos);
+  const acwrEl  = document.getElementById('h-acwr');
+  const acwrSub = document.getElementById('h-acwr-sub');
+  if (acwrVal !== null) {
+    acwrEl.textContent = acwrVal.toFixed(2);
+    acwrEl.className = 'hero-kpi-num ' + (acwrVal > 1.5 ? 'bad' : acwrVal > 1.3 ? 'warn' : acwrVal < 0.7 ? 'warn' : 'teal');
+    acwrSub.textContent = acwrVal > 1.5 ? 'zona de peligro' : acwrVal > 1.3 ? 'precaución' : acwrVal < 0.7 ? 'infraentrenamiento' : 'zona óptima';
+  } else {
+    acwrEl.textContent = '—'; acwrEl.className = 'hero-kpi-num'; acwrSub.textContent = 'datos insuficientes';
+  }
 
-  // Use full bienestar (incl. rehab) to detect active injuries
-  const latestPerPlayer = {};
+  // Alertas
+  const alertas = todayB.filter(r => r.total > 0 && r.total <= 13).length;
+  const alertEl = document.getElementById('h-alertas');
+  alertEl.textContent = alertas;
+  alertEl.className = 'hero-kpi-num ' + (alertas > 2 ? 'bad' : alertas > 0 ? 'warn' : 'teal');
+
+  // Lesiones activas
+  const latestAll = {};
   bienestarFull.forEach(r => {
-    if (!latestPerPlayer[r.jugador] || dk(r.fecha) > dk(latestPerPlayer[r.jugador].fecha))
-      latestPerPlayer[r.jugador] = r;
+    if (!latestAll[r.jugador] || dk(r.fecha) > dk(latestAll[r.jugador].fecha)) latestAll[r.jugador] = r;
   });
-  const lesionados = Object.values(latestPerPlayer)
+  const lesionados = Object.values(latestAll)
     .filter(r => r.lesion && r.lesion !== '' && r.lesion.toLowerCase() !== 'no' && r.lesion !== 'N')
     .map(r => r.jugador);
-  document.getElementById('kpi-lesion').textContent = lesionados.length;
-  document.getElementById('kpi-lesion-sub').textContent =
-    lesionados.length ? lesionados.slice(0, 3).join(', ') + (lesionados.length > 3 ? '…' : '') : 'Sin lesiones activas';
-
-  document.getElementById('kpi-sesiones').textContent = entrenos.length;
-  document.getElementById('kpi-sesiones-sub').textContent =
-    'de entrenamiento · ' + [...new Set(bienestar.map(r => dk(r.fecha)))].length + ' días con bienestar';
+  const lesEl  = document.getElementById('h-lesiones');
+  const lesSub = document.getElementById('h-lesiones-sub');
+  lesEl.textContent = lesionados.length;
+  lesEl.className = 'hero-kpi-num ' + (lesionados.length > 0 ? 'bad' : 'teal');
+  lesSub.textContent = lesionados.length ? lesionados.slice(0,2).join(', ') + (lesionados.length>2?'…':'') : 'sin lesiones activas';
 }
 
-// ── HEATMAP ───────────────────────────────────────────────────────────────
-function renderHeatmap(allB) {
-  const hm = document.getElementById('heatmap');
-
-  // Show last 14 days within the selected range (anchored to latest data date or today)
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - rangeDays);
-  const rangeData = allB.filter(r => toDate(r.fecha) >= cutoff);
-  const dataDates = rangeData.map(r => dk(r.fecha)).filter(Boolean).sort();
-  const anchor = dataDates.length ? new Date(dataDates[dataDates.length - 1] + 'T12:00:00') : new Date();
-
-  const days = [];
-  for (let i = 13; i >= 0; i--) {
-    const d = new Date(anchor);
-    d.setDate(anchor.getDate() - i);
-    days.push(dk(d));
+function computeTeamACWR(bienestar, allEntrenos) {
+  const eByDate = {};
+  allEntrenos.forEach(r => { const d=dk(r.fecha); if(d) eByDate[d]=r; });
+  const bByDate = {};
+  bienestar.forEach(r => { const d=dk(r.fecha); if(!d) return; if(!bByDate[d]) bByDate[d]=[]; bByDate[d].push(r); });
+  const loads = [];
+  for (let i = 27; i >= 0; i--) {
+    const dt = new Date(); dt.setDate(dt.getDate()-i); const d = dk(dt);
+    const rpe = bByDate[d] ? avg(bByDate[d].map(r=>r.rpe)) : 0;
+    const dur = eByDate[d] ? (eByDate[d].duracion||60) : (bByDate[d]&&rpe>0?60:0);
+    loads.push(rpe>0 ? rpe*dur : 0);
   }
-  document.querySelector('.badge-teal').textContent = rangeDays <= 14 ? rangeDays + ' días' : '14 días (últimos)';
+  const acute   = loads.slice(21).reduce((a,b)=>a+b,0) / 7;
+  const chronic = loads.reduce((a,b)=>a+b,0) / 28;
+  return chronic > 0 ? +(acute/chronic).toFixed(2) : null;
+}
 
-  const players = [...new Set(allB.map(r => r.jugador))].filter(Boolean).sort();
+// ── PLAYER STATS ──────────────────────────────────────────
+function computePlayerStats(bienestarFull, entrenos) {
+  const cutoff   = getCutoff(currentPeriod);
+  const pLen     = Math.max(1, Math.ceil((new Date()-cutoff)/86400000));
+  const prevCut  = new Date(cutoff); prevCut.setDate(prevCut.getDate()-pLen);
+  const current  = bienestarFull.filter(r => toDate(r.fecha) >= cutoff);
+  const previous = bienestarFull.filter(r => toDate(r.fecha) >= prevCut && toDate(r.fecha) < cutoff);
+  const players  = [...new Set(bienestarFull.map(r=>r.jugador))].filter(Boolean);
 
-  if (!players.length) {
-    hm.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Sin datos de bienestar registrados aún</div></div>';
+  const eByDate = {};
+  entrenos.forEach(e => { const d=dk(e.fecha); if(d) eByDate[d]=e; });
+
+  return players.map(nombre => {
+    const curr = current.filter(r => r.jugador === nombre);
+    const prev = previous.filter(r => r.jugador === nombre);
+    if (!curr.length) return null;
+
+    const hooAvg  = +avg(curr.map(r=>r.total)).toFixed(1);
+    const hooPrev = prev.length ? +avg(prev.map(r=>r.total)).toFixed(1) : hooAvg;
+    const hooTrend = +(hooAvg - hooPrev).toFixed(1);
+    const sueno   = +avg(curr.map(r=>r.sueno)).toFixed(1);
+    const fatiga  = +avg(curr.map(r=>r.fatiga)).toFixed(1);
+    const dolor   = +avg(curr.map(r=>r.dolorMuscular)).toFixed(1);
+    const estres  = +avg(curr.map(r=>r.estres).filter(v=>v>0)).toFixed(1);
+    const rpe     = +avg(curr.map(r=>r.rpe)).toFixed(1);
+
+    // Individual ACWR (last 28 days always)
+    const iLoads = [];
+    for (let i = 27; i >= 0; i--) {
+      const dt = new Date(); dt.setDate(dt.getDate()-i); const d = dk(dt);
+      const bRec = rawData.bienestar.find(r => r.jugador===nombre && dk(r.fecha)===d);
+      const eRec = eByDate[d] || rawData.entrenos.find(e => dk(e.fecha)===d);
+      const load = bRec && bRec.rpe > 0 ? bRec.rpe*(eRec?eRec.duracion:60) : 0;
+      iLoads.push(load);
+    }
+    const acute28  = iLoads.slice(21).reduce((a,b)=>a+b,0)/7;
+    const chronic28 = iLoads.reduce((a,b)=>a+b,0)/28;
+    const acwr = chronic28 > 0 ? +(acute28/chronic28).toFixed(2) : null;
+
+    const latest   = [...curr].sort((a,b)=>dk(b.fecha).localeCompare(dk(a.fecha)))[0];
+    const isRehab  = curr.some(r=>r.contexto==='rehab');
+    const lesion   = latest && latest.lesion && latest.lesion!=='N' && latest.lesion.toLowerCase()!=='no' ? (latest.lesionTxt||latest.lesion) : '';
+
+    const alertas  = curr.filter(r=>r.total>0&&r.total<=13).length;
+    const alertPct = curr.length ? alertas/curr.length : 0;
+
+    let riesgo;
+    if (isRehab) riesgo = 'RIESGO';
+    else if (hooAvg < 14 || (acwr!==null&&acwr>1.5) || alertPct > 0.35) riesgo = 'RIESGO';
+    else if (hooAvg < 18 || (acwr!==null&&(acwr>1.3||acwr<0.7)) || alertPct > 0.1) riesgo = 'ATENCIÓN';
+    else riesgo = 'ÓPTIMO';
+
+    return { nombre, hooAvg, hooPrev, hooTrend, sueno, fatiga, dolor, estres, rpe, acwr,
+             sesiones: curr.length, alertas, alertPct, isRehab, lesion, riesgo,
+             estado: isRehab ? 'rehab' : 'activo' };
+  }).filter(Boolean).sort((a,b) => {
+    const o = { RIESGO:0, 'ATENCIÓN':1, 'ÓPTIMO':2 };
+    return o[a.riesgo]-o[b.riesgo] || b.hooAvg-a.hooAvg;
+  });
+}
+
+// ── PLAYER CARDS ──────────────────────────────────────────
+function renderPlayerCards(stats) {
+  const grid = document.getElementById('player-grid');
+  document.getElementById('players-count').textContent = stats.length + ' jugadores';
+
+  if (!stats.length) {
+    grid.innerHTML = '<div class="empty-state"><div class="empty-icon">👥</div>Sin datos en este período</div>';
     return;
   }
 
-  // Lookup: "jugador|fecha" → entry (keep highest total per day)
-  const lookup = {};
-  allB.forEach(r => {
-    const key = r.jugador + '|' + dk(r.fecha);
-    if (!lookup[key] || r.total > (lookup[key].total || 0)) lookup[key] = r;
+  grid.innerHTML = stats.map(p => {
+    const cls   = p.riesgo === 'RIESGO' ? 'riesgo' : p.riesgo === 'ATENCIÓN' ? 'atencion' : 'optimo';
+    const sCls  = wClass(p.hooAvg);
+    const tSign = p.hooTrend > 0 ? '+' : '';
+    const tCls  = p.hooTrend > 0.5 ? 'up' : p.hooTrend < -0.5 ? 'down' : '';
+    const tArrow = p.hooTrend > 0.5 ? '↑' : p.hooTrend < -0.5 ? '↓' : '→';
+    const acwrStr = p.acwr !== null
+      ? `<span class="${p.acwr>1.5?'bad':p.acwr>1.3?'warn':p.acwr<0.7?'warn':'good'}">${p.acwr}</span>`
+      : '—';
+
+    const pctS = Math.round((p.sueno/7)*100);
+    const pctF = Math.round((p.fatiga/7)*100);
+    const pctD = Math.round((p.dolor/7)*100);
+    const pctE = Math.round(((p.estres||0)/7)*100);
+    const pctR = Math.round((p.rpe/10)*100);
+
+    const aiId = 'ai-' + p.nombre.replace(/\s+/g,'_');
+    const existingAI = aiAnalyses[p.nombre];
+
+    return `<div class="player-card ${cls}" id="pc-${aiId}">
+      <div class="pc-head">
+        <div class="pc-name">${p.nombre}${p.isRehab?'<span style="font-size:.58rem;margin-left:6px;color:var(--amber)"> · REHAB</span>':''}</div>
+        <div class="pc-badge ${cls}">${p.riesgo}</div>
+        <div class="pc-score ${sCls}">${p.hooAvg}<span style="font-size:.65rem;color:var(--text-dim);font-weight:300">/28</span></div>
+      </div>
+      <div class="pc-metrics">
+        <div class="pc-metric">
+          <div class="pc-metric-label">Sueño</div>
+          <div class="pc-metric-val ${mClass(p.sueno,7)}">${p.sueno}<span style="font-size:.6rem;color:var(--text-dim)">/7</span></div>
+          <div class="pc-metric-bar"><div class="pc-metric-fill ${mClass(p.sueno,7)}" style="width:${pctS}%"></div></div>
+        </div>
+        <div class="pc-metric">
+          <div class="pc-metric-label">Fatiga</div>
+          <div class="pc-metric-val ${mClass(p.fatiga,7)}">${p.fatiga}<span style="font-size:.6rem;color:var(--text-dim)">/7</span></div>
+          <div class="pc-metric-bar"><div class="pc-metric-fill ${mClass(p.fatiga,7)}" style="width:${pctF}%"></div></div>
+        </div>
+        <div class="pc-metric">
+          <div class="pc-metric-label">Dolor</div>
+          <div class="pc-metric-val ${mClass(p.dolor,7)}">${p.dolor}<span style="font-size:.6rem;color:var(--text-dim)">/7</span></div>
+          <div class="pc-metric-bar"><div class="pc-metric-fill ${mClass(p.dolor,7)}" style="width:${pctD}%"></div></div>
+        </div>
+        <div class="pc-metric">
+          <div class="pc-metric-label">Estrés</div>
+          <div class="pc-metric-val ${mClass(p.estres||0,7)}">${p.estres||'—'}${p.estres?'<span style="font-size:.6rem;color:var(--text-dim)">/7</span>':''}</div>
+          <div class="pc-metric-bar"><div class="pc-metric-fill ${mClass(p.estres||0,7)}" style="width:${pctE}%"></div></div>
+        </div>
+        <div class="pc-metric">
+          <div class="pc-metric-label">RPE medio</div>
+          <div class="pc-metric-val">${p.rpe}<span style="font-size:.6rem;color:var(--text-dim)">/10</span></div>
+          <div class="pc-metric-bar"><div class="pc-metric-fill" style="width:${pctR}%;background:var(--text-dim)"></div></div>
+        </div>
+        <div class="pc-metric">
+          <div class="pc-metric-label">ACWR</div>
+          <div class="pc-metric-val">${acwrStr}</div>
+          <div class="pc-metric-bar" style="background:transparent"></div>
+        </div>
+      </div>
+      <div class="pc-footer">
+        <div class="pc-trend">
+          <span class="${tCls}">${tArrow} ${tSign}${p.hooTrend} vs período ant.</span>
+        </div>
+        <div class="pc-sessions">${p.sesiones} sesiones · ${p.alertas} alertas</div>
+      </div>
+      <div class="pc-ai" id="${aiId}">
+        ${existingAI ? renderAIContent(existingAI) : `<div style="padding:12px 18px;font-size:.68rem;color:var(--text-dim);letter-spacing:.06em">Pulsa «Generar análisis IA» para ver el plan de acción</div>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderAIContent(ai) {
+  const prioLabel = ai.prioridad || 'MEDIA';
+  const indicators = (ai.indicadores||[]).map(i => `<span class="pc-ai-tag">${i}</span>`).join('');
+  const plan = (ai.plan||[]).map((item,i) =>
+    `<div class="pc-ai-plan-item"><div class="pc-ai-plan-num">${i+1}</div><div>${item}</div></div>`
+  ).join('');
+  return `<div class="pc-ai-content">
+    <div class="pc-ai-risk-row">
+      <div class="pc-ai-risk-lbl">Análisis preparador físico</div>
+      <div class="pc-ai-priority ${prioLabel}">Prioridad ${prioLabel}</div>
+    </div>
+    ${ai.indicadores&&ai.indicadores.length?`<div class="pc-ai-indicators">${indicators}</div>`:''}
+    <div class="pc-ai-summary">${ai.resumen||''}</div>
+    ${ai.plan&&ai.plan.length?`<div class="pc-ai-plan-title">Plan de acción</div>${plan}`:''}
+  </div>`;
+}
+
+// ── AI ANALYSIS ───────────────────────────────────────────
+function toggleApiKey() {
+  const row = document.getElementById('apikey-row');
+  row.style.display = row.style.display === 'none' ? 'flex' : 'none';
+}
+
+async function saveApiKey() {
+  const key = document.getElementById('inp-apikey').value.trim();
+  if (!key) { toast('⚠️ Introduce una API key'); return; }
+  const r = await api({action:'save_anthropic_key', adminPassword:'Supertobby007', apiKey:key});
+  if (r.ok) { toast('✓ API key guardada'); document.getElementById('apikey-row').style.display='none'; }
+  else toast('❌ ' + r.error);
+}
+
+async function generateAI() {
+  if (!playerStats.length) { toast('⚠️ Sin datos de jugadores'); return; }
+
+  const btn = document.getElementById('btn-ai');
+  btn.disabled = true; btn.textContent = 'Generando…';
+
+  // Show loading state on all cards
+  playerStats.forEach(p => {
+    const aiId = 'ai-' + p.nombre.replace(/\s+/g,'_');
+    const el = document.getElementById(aiId);
+    if (el) el.innerHTML = `<div class="pc-ai-loading"><div class="mini-spin"></div>Analizando con IA…</div>`;
   });
 
-  hm.style.gridTemplateColumns = '120px ' + days.map(() => '34px').join(' ');
-  hm.innerHTML = '';
+  try {
+    const players = playerStats.map(p => ({
+      nombre: p.nombre, estado: p.estado, lesion: p.lesion,
+      hooAvg: p.hooAvg, hooTrend: p.hooTrend,
+      sueno: p.sueno, fatiga: p.fatiga, dolor: p.dolor, estres: p.estres||0,
+      acwr: p.acwr, rpe: p.rpe, sesiones: p.sesiones, alertas: p.alertas
+    }));
 
-  // Corner
-  hm.appendChild(document.createElement('div'));
+    const r = await api({
+      action: 'generate_analysis',
+      teamId: TEAM_ID, teamKey: TEAM_KEY,
+      period: currentPeriod, players
+    });
 
-  // Date headers
-  days.forEach(d => {
-    const el = document.createElement('div');
-    el.className = 'hm-date';
-    el.textContent = fmtDate(d);
-    hm.appendChild(el);
+    if (r.needsKey) {
+      playerStats.forEach(p => {
+        const aiId = 'ai-' + p.nombre.replace(/\s+/g,'_');
+        const el = document.getElementById(aiId);
+        if (el) el.innerHTML = `<div style="padding:12px 18px;font-size:.7rem;color:var(--amber)">⚠️ API key de Anthropic no configurada. Pulsa ⚙ API Key.</div>`;
+      });
+      toast('⚠️ Configura la API key de Anthropic');
+      return;
+    }
+    if (!r.ok) throw new Error(r.error);
+
+    aiAnalyses = r.analyses || {};
+    Object.keys(aiAnalyses).forEach(nombre => {
+      const aiId = 'ai-' + nombre.replace(/\s+/g,'_');
+      const el = document.getElementById(aiId);
+      if (el) el.innerHTML = renderAIContent(aiAnalyses[nombre]);
+    });
+    toast(r.cached ? '✓ Análisis recuperado (caché)' : '✓ Análisis generado por IA');
+  } catch(e) {
+    playerStats.forEach(p => {
+      const aiId = 'ai-' + p.nombre.replace(/\s+/g,'_');
+      const el = document.getElementById(aiId);
+      if (el) el.innerHTML = `<div style="padding:12px 18px;font-size:.7rem;color:var(--red)">❌ ${e.message}</div>`;
+    });
+    toast('❌ Error al generar análisis');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Generar análisis IA';
+  }
+}
+
+// ── CHART TABS ────────────────────────────────────────────
+function showChartTab(tab, btn) {
+  activeChartTab = tab;
+  document.querySelectorAll('.chart-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.chart-panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-'+tab).classList.add('active');
+  const cutoff       = getCutoff(currentPeriod);
+  const bienestarFull = rawData.bienestar.filter(r => toDate(r.fecha) >= cutoff);
+  const bienestar     = bienestarFull.filter(r => r.contexto !== 'rehab');
+  const entrenos      = rawData.entrenos.filter(r => toDate(r.fecha) >= cutoff);
+  renderActiveChart(bienestar, bienestarFull, entrenos);
+}
+
+function renderActiveChart(bienestar, bienestarFull, entrenos) {
+  if (activeChartTab === 'bienestar') renderWellness(bienestar);
+  if (activeChartTab === 'carga')     renderACWR(bienestarFull.filter(r=>r.contexto!=='rehab'), rawData.entrenos);
+  if (activeChartTab === 'radar')     renderRadar(bienestar);
+  if (activeChartTab === 'heatmap')   renderHeatmap(rawData.bienestar);
+}
+
+// ── WELLNESS TREND ────────────────────────────────────────
+function renderWellness(bienestar) {
+  const ctx = getCtx('chart-wellness');
+  if (!ctx) return;
+  if (cWellness) { cWellness.destroy(); cWellness = null; }
+  const byDate = {};
+  bienestar.forEach(r => { const d=dk(r.fecha); if(!d) return; if(!byDate[d]) byDate[d]=[]; byDate[d].push(r); });
+  const dates = Object.keys(byDate).sort();
+  if (!dates.length) { showEmpty(ctx.canvas,'📈','Sin datos en este período'); return; }
+  const labels   = dates.map(fmtDate);
+  const totals   = dates.map(d => +avg(byDate[d].map(r=>r.total)).toFixed(1));
+  const suenios  = dates.map(d => +avg(byDate[d].map(r=>r.sueno)).toFixed(2));
+  const fatigas  = dates.map(d => +avg(byDate[d].map(r=>r.fatiga)).toFixed(2));
+  const dolores  = dates.map(d => +avg(byDate[d].map(r=>r.dolorMuscular)).toFixed(2));
+  const estress  = dates.map(d => +avg(byDate[d].map(r=>r.estres).filter(v=>v>0)).toFixed(2));
+  cWellness = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: [
+      { label:'Hooper (/28)', data:totals,  borderColor:'#4BA882', backgroundColor:'rgba(75,168,130,.06)', borderWidth:2, pointRadius:3, tension:.35, yAxisID:'y1', fill:true },
+      { label:'Sueño (/7)',   data:suenios, borderColor:'#60a5fa', backgroundColor:'transparent', borderWidth:1.5, pointRadius:2, tension:.35, yAxisID:'y2', borderDash:[5,3] },
+      { label:'Fatiga (/7)',  data:fatigas, borderColor:'#C9A96E', backgroundColor:'transparent', borderWidth:1.5, pointRadius:2, tension:.35, yAxisID:'y2', borderDash:[5,3] },
+      { label:'Dolor (/7)',   data:dolores, borderColor:'#C07070', backgroundColor:'transparent', borderWidth:1.5, pointRadius:2, tension:.35, yAxisID:'y2', borderDash:[5,3] },
+      { label:'Estrés (/7)',  data:estress, borderColor:'#a78bfa', backgroundColor:'transparent', borderWidth:1.5, pointRadius:2, tension:.35, yAxisID:'y2', borderDash:[3,4] },
+    ]},
+    options: { responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
+      plugins:{ legend:{labels:{boxWidth:12,padding:14,color:'#76767E',font:{size:11}}}, tooltip:{backgroundColor:'#191920',borderColor:'#2A2A36',borderWidth:1} },
+      scales: {
+        x:  { grid:{color:'#1E1E26'}, ticks:{maxRotation:0,maxTicksLimit:14} },
+        y1: { position:'left',  min:4, max:28, grid:{color:'#1E1E26'}, ticks:{stepSize:4}, title:{display:true,text:'Hooper',color:'#4BA882',font:{size:11}} },
+        y2: { position:'right', min:1, max:7,  grid:{drawOnChartArea:false}, title:{display:true,text:'Sub-escala',color:'#76767E',font:{size:11}} }
+      }
+    }
   });
+}
 
+// ── ACWR ──────────────────────────────────────────────────
+function renderACWR(allB, allE) {
+  const ctx = getCtx('chart-acwr');
+  if (!ctx) return;
+  if (cAcwr) { cAcwr.destroy(); cAcwr = null; }
+  const eByDate = {}; allE.forEach(r=>{const d=dk(r.fecha);if(d)eByDate[d]=r;});
+  const bByDate = {}; allB.forEach(r=>{const d=dk(r.fecha);if(!d)return;if(!bByDate[d])bByDate[d]=[];bByDate[d].push(r);});
+  const loads = [];
+  for (let i=59;i>=0;i--) {
+    const dt=new Date();dt.setDate(dt.getDate()-i);const d=dk(dt);
+    const rpe=bByDate[d]?avg(bByDate[d].map(r=>r.rpe)):0;
+    const dur=eByDate[d]?(eByDate[d].duracion||60):(bByDate[d]&&rpe>0?60:0);
+    loads.push({d,load:rpe>0?rpe*dur:0});
+  }
+  const labels=[],acwr=[],acute=[];
+  for (let i=27;i<loads.length;i++) {
+    const a=loads.slice(i-6,i+1).reduce((s,l)=>s+l.load,0)/7;
+    const c=loads.slice(i-27,i+1).reduce((s,l)=>s+l.load,0)/28;
+    labels.push(fmtDate(loads[i].d));
+    acute.push(+a.toFixed(0));
+    acwr.push(c>0?+(a/c).toFixed(2):null);
+  }
+  if (acwr.every(v=>v===null||v===0)){showEmpty(ctx.canvas,'📉','Se necesitan ≥28 días de RPE para el ACWR');return;}
+  cAcwr = new Chart(ctx,{
+    type:'bar', data:{labels, datasets:[
+      {type:'bar',  label:'Carga aguda (UA)', data:acute, backgroundColor:'rgba(75,168,130,.12)', borderColor:'#4BA882', borderWidth:1, yAxisID:'y1'},
+      {type:'line', label:'ACWR',             data:acwr,  borderColor:'#60a5fa', backgroundColor:'transparent', borderWidth:2, pointRadius:3, tension:.3, yAxisID:'y2',
+        segment:{borderColor:ctx=>{const v=ctx.p1.parsed.y;return v>1.5?'#C07070':v>1.3?'#C9A96E':'#60a5fa';}}}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{labels:{boxWidth:12,color:'#76767E',font:{size:11}}},tooltip:{backgroundColor:'#191920',borderColor:'#2A2A36',borderWidth:1}},
+      scales:{
+        x:{grid:{color:'#1E1E26'},ticks:{maxTicksLimit:12}},
+        y1:{position:'left',grid:{color:'#1E1E26'},title:{display:true,text:'Carga (UA)',color:'#76767E',font:{size:11}}},
+        y2:{position:'right',min:0,max:2.2,grid:{drawOnChartArea:false},title:{display:true,text:'ACWR',color:'#60a5fa',font:{size:11}}}
+      }
+    }
+  });
+}
+
+// ── RADAR ─────────────────────────────────────────────────
+function renderRadar(bienestar) {
+  const players = [...new Set(bienestar.map(r=>r.jugador))].filter(Boolean).sort();
+  const sel = document.getElementById('player-sel');
+  sel.innerHTML = players.map(p =>
+    `<button class="p-btn${p===selectedPlayer?' active':''}" onclick="selectPlayer('${p.replace(/'/g,"&#39;")}')">${p}</button>`
+  ).join('');
+  if (!selectedPlayer && players.length) selectedPlayer = players[0];
+  const ctx = getCtx('chart-radar');
+  if (!ctx) return;
+  if (cRadar) { cRadar.destroy(); cRadar = null; }
+  if (!players.length){showEmpty(ctx.canvas,'🎯','Sin datos disponibles');return;}
+  const now=new Date(), w1s=new Date(now), w2s=new Date(now);
+  w1s.setDate(now.getDate()-7); w2s.setDate(now.getDate()-14);
+  const pd=bienestar.filter(r=>r.jugador===selectedPlayer);
+  const this_=pd.filter(r=>toDate(r.fecha)>=w1s);
+  const prev_=pd.filter(r=>toDate(r.fecha)>=w2s&&toDate(r.fecha)<w1s);
+  const dims=['Sueño','Fatiga','Dolor Musc.','Estrés','RPE (×0.7)'];
+  const vals=arr=>[
+    +avg(arr.map(r=>r.sueno)).toFixed(2),
+    +avg(arr.map(r=>r.fatiga)).toFixed(2),
+    +avg(arr.map(r=>r.dolorMuscular)).toFixed(2),
+    +avg(arr.map(r=>r.estres).filter(v=>v>0)).toFixed(2),
+    +(avg(arr.map(r=>r.rpe))*0.7).toFixed(2)
+  ];
+  cRadar=new Chart(ctx,{type:'radar',data:{labels:dims,datasets:[
+    {label:'Esta semana',    data:vals(this_),borderColor:'#4BA882',backgroundColor:'rgba(75,168,130,.1)',pointBackgroundColor:'#4BA882',borderWidth:2},
+    {label:'Semana anterior',data:vals(prev_),borderColor:'#60a5fa',backgroundColor:'rgba(96,165,250,.06)',pointBackgroundColor:'#60a5fa',borderWidth:1.5,borderDash:[4,3]}
+  ]},options:{responsive:true,maintainAspectRatio:false,
+    scales:{r:{min:0,max:7,grid:{color:'#1E1E26'},angleLines:{color:'#1E1E26'},pointLabels:{color:'#76767E',font:{size:11}},ticks:{color:'#2A2A36',stepSize:1,backdropColor:'transparent'}}},
+    plugins:{legend:{labels:{boxWidth:12,color:'#76767E',font:{size:12}}},tooltip:{backgroundColor:'#191920',borderColor:'#2A2A36',borderWidth:1}}
+  }});
+}
+function selectPlayer(name) {
+  selectedPlayer = name;
+  document.querySelectorAll('.p-btn').forEach(b=>b.classList.toggle('active',b.textContent===name));
+  const cutoff=getCutoff(currentPeriod);
+  const bienestar=rawData.bienestar.filter(r=>toDate(r.fecha)>=cutoff&&r.contexto!=='rehab');
+  renderRadar(bienestar);
+}
+
+// ── HEATMAP ───────────────────────────────────────────────
+function renderHeatmap(allB) {
+  const hm = document.getElementById('hm-grid');
+  const days=28, cols=days+1;
+  const dayKeys=[];
+  for(let i=days-1;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);dayKeys.push(dk(d));}
+  const players=[...new Set(allB.map(r=>r.jugador))].filter(Boolean).sort();
+  const lookup={};
+  allB.forEach(r=>{const key=r.jugador+'|'+dk(r.fecha);lookup[key]=r;});
+  hm.style.gridTemplateColumns=`80px repeat(${days},1fr)`;
+  hm.innerHTML='';
+  // Header row
+  const blank=document.createElement('div');hm.appendChild(blank);
+  dayKeys.forEach(d=>{const el=document.createElement('div');el.className='hm-date';el.textContent=fmtDate(d);hm.appendChild(el);});
   // Player rows
-  players.forEach(player => {
-    const pEl = document.createElement('div');
-    pEl.className = 'hm-player';
-    pEl.textContent = player.length > 14 ? player.slice(0, 13) + '…' : player;
-    hm.appendChild(pEl);
-
-    days.forEach(d => {
-      const entry = lookup[player + '|' + d];
-      const cell  = document.createElement('div');
-      cell.className = 'hm-cell ' + (entry ? wClass(entry.total) : 'empty');
-      cell.textContent = entry ? entry.total || '·' : '·';
-
-      cell.addEventListener('mousemove', e => {
-        const tt = document.getElementById('hm-tooltip');
-        if (entry) {
-          const hasLesion = entry.lesion && entry.lesion.toLowerCase() !== 'no' && entry.lesion !== '';
-          tt.innerHTML = `
-            <div class="tt-name">${player}</div>
-            <div class="tt-row">📅 ${d}</div>
-            <div class="tt-row">🌙 Sueño: <span>${entry.sueno}/7</span></div>
-            <div class="tt-row">⚡ Fatiga: <span>${entry.fatiga}/7</span></div>
-            <div class="tt-row">💪 Dolor: <span>${entry.dolorMuscular}/7</span></div>
-            <div class="tt-row">🧠 Estrés: <span>${entry.estres || '—'}/7</span></div>
-            <div class="tt-row">📊 Hooper: <span style="font-weight:600">${entry.total}/28</span></div>
-            ${entry.rpe ? `<div class="tt-row">🏃 RPE: <span>${entry.rpe}/10</span></div>` : ''}
-            ${hasLesion ? `<div class="tt-row" style="color:#C07070;margin-top:4px">⚠️ ${entry.lesion}</div>` : ''}
-          `;
+  players.forEach(player=>{
+    const pEl=document.createElement('div');pEl.className='hm-player';
+    pEl.textContent=player.length>12?player.slice(0,11)+'…':player;hm.appendChild(pEl);
+    dayKeys.forEach(d=>{
+      const entry=lookup[player+'|'+d];
+      const cell=document.createElement('div');
+      cell.className='hm-cell '+(entry?wClass(entry.total):'empty');
+      cell.textContent=entry?entry.total||'·':'·';
+      cell.addEventListener('mousemove',e=>{
+        const tt=document.getElementById('hm-tooltip');
+        if(entry){
+          tt.innerHTML=`<div class="tt-name">${player}</div><div class="tt-row">📅 ${d}</div>
+            <div class="tt-row">🌙<span>${entry.sueno}/7</span></div>
+            <div class="tt-row">⚡<span>${entry.fatiga}/7</span></div>
+            <div class="tt-row">💪<span>${entry.dolorMuscular}/7</span></div>
+            <div class="tt-row">🧠<span>${entry.estres||'—'}/7</span></div>
+            <div class="tt-row">📊 Hooper<span style="font-weight:600">${entry.total}/28</span></div>
+            ${entry.rpe?`<div class="tt-row">🏃 RPE<span>${entry.rpe}/10</span></div>`:''}`;
         } else {
-          tt.innerHTML = `<div class="tt-name">${player}</div><div class="tt-row" style="color:#3d4f63">Sin registro el ${d}</div>`;
+          tt.innerHTML=`<div class="tt-name">${player}</div><div class="tt-row" style="color:#3d4f63">Sin registro</div>`;
         }
-        tt.style.display = 'block';
-        tt.style.left = (e.clientX + 14) + 'px';
-        tt.style.top  = (e.clientY + 14) + 'px';
+        tt.style.display='block';tt.style.left=(e.clientX+14)+'px';tt.style.top=(e.clientY+14)+'px';
       });
-      cell.addEventListener('mouseleave', () => {
-        document.getElementById('hm-tooltip').style.display = 'none';
-      });
-
+      cell.addEventListener('mouseleave',()=>{document.getElementById('hm-tooltip').style.display='none';});
       hm.appendChild(cell);
     });
   });
 }
 
-// ── PLAYER LIST ───────────────────────────────────────────────────────────
-function renderPlayerList(bienestar) {
-  const list    = document.getElementById('player-list');
-  const players = [...new Set(bienestar.map(r => r.jugador))].filter(Boolean).sort();
-
-  if (!players.length) {
-    list.innerHTML = '<div class="empty-state"><div class="empty-icon">👥</div><div class="empty-text">Sin jugadores en el período</div></div>';
-    return;
-  }
-
-  // Last entry per player
-  const last = {};
-  bienestar.forEach(r => {
-    if (!last[r.jugador] || toDate(r.fecha) > toDate(last[r.jugador].fecha)) last[r.jugador] = r;
-  });
-
-  list.innerHTML = players.map(p => {
-    const e   = last[p];
-    const cls = e ? wClass(e.total) : 'empty';
-    const hasLesion = e && e.lesion && e.lesion.toLowerCase() !== 'no' && e.lesion !== '';
-    const dims = e ? `🌙${e.sueno} ⚡${e.fatiga} 💪${e.dolorMuscular} 🧠${e.estres || '—'}` : '—';
-    const score = e ? e.total + '/28' : '—';
-    return `<div class="player-row">
-      <div>
-        <div class="player-name">${p}${hasLesion ? '<span class="injury-tag">⚠️ Lesión</span>' : ''}</div>
-        <div class="player-dims">${dims}</div>
-      </div>
-      <span class="score-pill ${cls}">${score}</span>
-    </div>`;
-  }).join('');
+// ── STAFF NAV ─────────────────────────────────────────────
+function goStaff() {
+  window.location.href='staff.html?team='+encodeURIComponent(TEAM_ID)+'&key='+encodeURIComponent(TEAM_KEY);
 }
 
-// ── WELLNESS TREND ────────────────────────────────────────────────────────
-function renderWellnessTrend(bienestar) {
-  const ctx = getCtx('chart-wellness');
-  if (!ctx) return;
-  if (cWellness) { cWellness.destroy(); cWellness = null; }
-
-  const byDate = {};
-  bienestar.forEach(r => {
-    const d = dk(r.fecha);
-    if (!d) return;
-    if (!byDate[d]) byDate[d] = [];
-    byDate[d].push(r);
-  });
-
-  const dates   = Object.keys(byDate).sort();
-  if (!dates.length) {
-    showEmpty(ctx.canvas, '📈', 'Sin datos en el período seleccionado');
-    return;
-  }
-
-  const labels   = dates.map(fmtDate);
-  const totals   = dates.map(d => +avg(byDate[d].map(r => r.total)).toFixed(1));
-  const suenios  = dates.map(d => +avg(byDate[d].map(r => r.sueno)).toFixed(2));
-  const fatigas  = dates.map(d => +avg(byDate[d].map(r => r.fatiga)).toFixed(2));
-  const dolores  = dates.map(d => +avg(byDate[d].map(r => r.dolorMuscular)).toFixed(2));
-  const estress  = dates.map(d => +avg(byDate[d].map(r => r.estres).filter(v => v > 0)).toFixed(2));
-
-  cWellness = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        { label: 'Hooper (/28)', data: totals,  borderColor: '#4BA882', backgroundColor: 'rgba(75,168,130,.07)', borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#4BA882', tension: .35, yAxisID: 'y1', fill: true },
-        { label: 'Sueño (/7)',   data: suenios,  borderColor: '#60a5fa', backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 2, tension: .35, yAxisID: 'y2', borderDash: [5,3] },
-        { label: 'Fatiga (/7)',  data: fatigas,  borderColor: '#C9A96E', backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 2, tension: .35, yAxisID: 'y2', borderDash: [5,3] },
-        { label: 'Dolor (/7)',   data: dolores,  borderColor: '#C07070', backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 2, tension: .35, yAxisID: 'y2', borderDash: [5,3] },
-        { label: 'Estrés (/7)',  data: estress,  borderColor: '#a78bfa', backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 2, tension: .35, yAxisID: 'y2', borderDash: [3,4] },
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { labels: { boxWidth: 12, padding: 16, color: '#8C8C90', font: { size: 12 } } },
-        tooltip: { backgroundColor: '#1F1F24', borderColor: '#32323A', borderWidth: 1, padding: 10 }
-      },
-      scales: {
-        x: { grid: { color: '#1F1F24' }, ticks: { maxRotation: 0, maxTicksLimit: 14 } },
-        y1: { position: 'left',  min: 4, max: 28, grid: { color: '#1F1F24' }, ticks: { stepSize: 4 },
-              title: { display: true, text: 'Hooper', color: '#4BA882', font: { size: 11 } } },
-        y2: { position: 'right', min: 1, max: 7,  grid: { drawOnChartArea: false },
-              title: { display: true, text: 'Sub-escala', color: '#8C8C90', font: { size: 11 } } }
-      }
-    }
-  });
-}
-
-// ── RADAR ─────────────────────────────────────────────────────────────────
-function renderRadar(bienestar) {
-  const players = [...new Set(bienestar.map(r => r.jugador))].filter(Boolean).sort();
-  const sel = document.getElementById('player-selector');
-  sel.innerHTML = players.map(p =>
-    `<button class="p-btn${p === selectedPlayer ? ' active' : ''}" onclick="selectPlayer('${p.replace(/'/g,"&#39;")}')">${p}</button>`
-  ).join('');
-
-  if (!selectedPlayer && players.length) selectedPlayer = players[0];
-
-  const ctx = getCtx('chart-radar');
-  if (!ctx) return;
-  if (cRadar) { cRadar.destroy(); cRadar = null; }
-
-  if (!players.length) {
-    showEmpty(ctx.canvas, '🎯', 'Sin datos disponibles');
-    return;
-  }
-
-  const now  = new Date();
-  const w1s  = new Date(now); w1s.setDate(now.getDate() - 7);
-  const w2s  = new Date(now); w2s.setDate(now.getDate() - 14);
-
-  const pd   = bienestar.filter(r => r.jugador === selectedPlayer);
-  const this_ = pd.filter(r => toDate(r.fecha) >= w1s);
-  const prev_ = pd.filter(r => toDate(r.fecha) >= w2s && toDate(r.fecha) < w1s);
-
-  const dims  = ['Sueño', 'Fatiga', 'Dolor Musc.', 'Estrés', 'RPE (×0.7)'];
-  const vals  = arr => [
-    +avg(arr.map(r => r.sueno)).toFixed(2),
-    +avg(arr.map(r => r.fatiga)).toFixed(2),
-    +avg(arr.map(r => r.dolorMuscular)).toFixed(2),
-    +avg(arr.map(r => r.estres).filter(v => v > 0)).toFixed(2),
-    +( avg(arr.map(r => r.rpe)) * 0.7 ).toFixed(2)
-  ];
-
-  cRadar = new Chart(ctx, {
-    type: 'radar',
-    data: {
-      labels: dims,
-      datasets: [
-        { label: 'Esta semana',     data: vals(this_), borderColor: '#4BA882', backgroundColor: 'rgba(75,168,130,.12)', pointBackgroundColor: '#4BA882', borderWidth: 2 },
-        { label: 'Semana anterior', data: vals(prev_), borderColor: '#60a5fa', backgroundColor: 'rgba(96,165,250,.08)',  pointBackgroundColor: '#60a5fa', borderWidth: 1.5, borderDash: [4,3] }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      scales: {
-        r: {
-          min: 0, max: 7,
-          grid: { color: '#26262C' }, angleLines: { color: '#26262C' },
-          pointLabels: { color: '#8C8C90', font: { size: 11 } },
-          ticks: { color: '#32323A', stepSize: 1, backdropColor: 'transparent' }
-        }
-      },
-      plugins: {
-        legend: { labels: { boxWidth: 12, color: '#8C8C90', font: { size: 12 } } },
-        tooltip: { backgroundColor: '#1F1F24', borderColor: '#32323A', borderWidth: 1 }
-      }
-    }
-  });
-}
-
-function selectPlayer(p) {
-  selectedPlayer = p;
-  document.querySelectorAll('.p-btn').forEach(b => b.classList.toggle('active', b.textContent === p));
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - rangeDays);
-  renderRadar(rawData.bienestar.filter(r => toDate(r.fecha) >= cutoff));
-}
-
-// ── ACWR ──────────────────────────────────────────────────────────────────
-function renderACWR(allB, allE) {
-  const ctx = getCtx('chart-acwr');
-  if (!ctx) return;
-  if (cAcwr) { cAcwr.destroy(); cAcwr = null; }
-
-  // Build daily load for last 60 days: avg team RPE × session duration
-  const eByDate = {};
-  allE.forEach(r => { const d = dk(r.fecha); if (d) eByDate[d] = r; });
-  const bByDate = {};
-  allB.forEach(r => {
-    const d = dk(r.fecha);
-    if (!d) return;
-    if (!bByDate[d]) bByDate[d] = [];
-    bByDate[d].push(r);
-  });
-
-  const loads = [];
-  for (let i = 59; i >= 0; i--) {
-    const dt  = new Date(); dt.setDate(dt.getDate() - i);
-    const d   = dk(dt);
-    const rpe = bByDate[d] ? avg(bByDate[d].map(r => r.rpe)) : 0;
-    const dur = eByDate[d] ? (eByDate[d].duracion || 60) : (bByDate[d] && rpe > 0 ? 60 : 0);
-    loads.push({ d, load: rpe > 0 ? rpe * dur : 0 });
-  }
-
-  const labels = [], acwr = [], acute = [], chronic = [];
-  for (let i = 27; i < loads.length; i++) {
-    const a = loads.slice(i - 6,  i + 1).reduce((s, l) => s + l.load, 0) / 7;
-    const c = loads.slice(i - 27, i + 1).reduce((s, l) => s + l.load, 0) / 28;
-    labels.push(fmtDate(loads[i].d));
-    acute.push(+a.toFixed(0));
-    chronic.push(+c.toFixed(0));
-    acwr.push(c > 0 ? +(a / c).toFixed(2) : null);
-  }
-
-  if (acwr.every(v => v === null || v === 0)) {
-    showEmpty(ctx.canvas, '📉', 'Se necesitan al menos 28 días de RPE<br>para calcular el ACWR');
-    return;
-  }
-
-  cAcwr = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        { type: 'bar',  label: 'Carga aguda (UA)', data: acute,  backgroundColor: 'rgba(75,168,130,.15)', borderColor: '#4BA882', borderWidth: 1, yAxisID: 'y1' },
-        { type: 'line', label: 'ACWR',              data: acwr,   borderColor: '#60a5fa', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 3, tension: .3, yAxisID: 'y2',
-          segment: {
-            borderColor: ctx => {
-              const v = ctx.p1.parsed.y;
-              if (v > 1.5) return '#C07070';
-              if (v > 1.3) return '#C9A96E';
-              return '#60a5fa';
-            }
-          }
-        }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { labels: { boxWidth: 12, color: '#8C8C90', font: { size: 12 } } },
-        tooltip: { backgroundColor: '#1F1F24', borderColor: '#32323A', borderWidth: 1 }
-      },
-      scales: {
-        x: { grid: { color: '#1F1F24' }, ticks: { maxTicksLimit: 12 } },
-        y1: { position: 'left',  grid: { color: '#1F1F24' }, title: { display: true, text: 'Carga (UA)', color: '#8C8C90', font: { size: 11 } } },
-        y2: { position: 'right', min: 0, max: 2.2, grid: { drawOnChartArea: false },
-              title: { display: true, text: 'ACWR', color: '#60a5fa', font: { size: 11 } } }
-      }
-    }
-  });
-}
-
-// ── RPE POR JUGADOR ───────────────────────────────────────────────────────
-function renderRPE(bienestar) {
-  const ctx = getCtx('chart-rpe');
-  if (!ctx) return;
-  if (cRpe) { cRpe.destroy(); cRpe = null; }
-
-  const players = [...new Set(bienestar.map(r => r.jugador))].filter(Boolean).sort();
-  if (!players.length) { showEmpty(ctx.canvas, '🏃', 'Sin datos de RPE'); return; }
-
-  const data = players.map(p => {
-    const vals = bienestar.filter(r => r.jugador === p && r.rpe > 0).map(r => r.rpe);
-    return vals.length ? +avg(vals).toFixed(1) : 0;
-  });
-
-  const bgColors = data.map(v => v >= 8 ? 'rgba(192,112,112,.25)' : v >= 6 ? 'rgba(201,169,110,.25)' : 'rgba(75,168,130,.25)');
-  const brColors = data.map(v => v >= 8 ? '#C07070' : v >= 6 ? '#C9A96E' : '#4BA882');
-
-  cRpe = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: players,
-      datasets: [{ label: 'RPE Promedio', data, backgroundColor: bgColors, borderColor: brColors, borderWidth: 1.5, borderRadius: 2 }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { backgroundColor: '#1F1F24', borderColor: '#32323A', borderWidth: 1 }
-      },
-      scales: {
-        x: { grid: { color: '#1F1F24' } },
-        y: { min: 0, max: 10, grid: { color: '#1F1F24' }, ticks: { stepSize: 2 } }
-      }
-    }
-  });
-}
-
-// ── MINUTOS ───────────────────────────────────────────────────────────────
-function renderMinutos(partidosInd) {
-  const sec = document.getElementById('section-minutos');
-  if (cMinutos) { cMinutos.destroy(); cMinutos = null; }
-
-  if (!partidosInd.length) { sec.style.display = 'none'; return; }
-  sec.style.display = '';
-
-  const ctx = getCtx('chart-minutos');
-  if (!ctx) return;
-
-  const players = [...new Set(partidosInd.map(r => r.jugador))].filter(Boolean).sort();
-  const mins    = players.map(p => partidosInd.filter(r => r.jugador === p).reduce((s, r) => s + (r.minutos || 0), 0));
-
-  cMinutos = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: players,
-      datasets: [{ label: 'Minutos jugados', data: mins, backgroundColor: 'rgba(96,165,250,.2)', borderColor: '#60a5fa', borderWidth: 1.5, borderRadius: 2 }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { backgroundColor: '#1F1F24', borderColor: '#32323A', borderWidth: 1 }
-      },
-      scales: {
-        x: { grid: { color: '#1F1F24' } },
-        y: { min: 0, grid: { color: '#1F1F24' }, title: { display: true, text: 'Minutos', color: '#8C8C90', font: { size: 11 } } }
-      }
-    }
-  });
-}
-
-// ── CHART HELPERS ─────────────────────────────────────────────────────────
-function getCtx(id) {
-  const canvas = document.getElementById(id);
-  if (!canvas) return null;
-  // Restore canvas if previously hidden
-  canvas.style.display = '';
-  const wrap = canvas.parentElement;
-  wrap.querySelectorAll('.chart-empty').forEach(e => e.remove());
-  return canvas.getContext('2d');
-}
-
-function showEmpty(canvas, icon, text) {
-  // Hide canvas but keep it in the DOM so future renders can restore it
-  canvas.style.display = 'none';
-  const wrap = canvas.parentElement;
-  wrap.querySelectorAll('.chart-empty').forEach(e => e.remove());
-  const div = document.createElement('div');
-  div.className = 'chart-empty empty-state';
-  div.innerHTML = `<div class="empty-icon">${icon}</div><div class="empty-text">${text}</div>`;
-  div.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;';
-  wrap.style.position = 'relative';
-  wrap.appendChild(div);
-}
-
+// ── START ─────────────────────────────────────────────────
 init();
 </script>
 </body>
