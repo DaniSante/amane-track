@@ -490,9 +490,9 @@
 
     <div class="chart-panel" id="panel-carga">
       <div class="acwr-legend">
-        <div class="acwr-zone"><div class="acwr-dot" style="background:#A8C5A0"></div>Óptima (0.8–1.3)</div>
-        <div class="acwr-zone"><div class="acwr-dot" style="background:#C9A96E"></div>Precaución (1.3–1.5)</div>
-        <div class="acwr-zone"><div class="acwr-dot" style="background:#C07070"></div>Peligro (&gt;1.5)</div>
+        <div class="acwr-zone"><div class="acwr-dot" style="background:#4BA882"></div>Carga aguda (UA)</div>
+        <div class="acwr-zone"><div class="acwr-dot" style="background:#60a5fa"></div>ACWR EWMA (λ=0.25/0.069)</div>
+        <div class="acwr-zone" style="font-size:.6rem;color:var(--text-dim)">Alertas por cambio semanal (&gt;10%/15%/−20%)</div>
       </div>
       <div class="chart-wrap"><canvas id="chart-acwr"></canvas></div>
     </div>
@@ -733,19 +733,33 @@ function renderHero(bienestar, bienestarFull, entrenos) {
     srpeEl.textContent = '—'; srpeSub.textContent = 'Sin sesiones registradas'; srpeBadge.innerHTML = '';
   }
 
-  // 3. ACWR
-  const acwrVal = computeTeamACWR(rawData.bienestar.filter(r => r.contexto!=='rehab'), rawData.entrenos);
-  const acwrEl  = document.getElementById('h-acwr');
-  const acwrSub = document.getElementById('h-acwr-sub');
-  const acwrBadge = document.getElementById('h-acwr-badge');
-  if (acwrVal !== null) {
-    acwrEl.textContent = acwrVal.toFixed(2);
-    acwrEl.className = 'hero-kpi-num ' + (acwrVal > 1.5 ? 'bad' : acwrVal > 1.3 ? 'warn' : acwrVal < 0.7 ? 'warn' : 'teal');
-    acwrSub.textContent = 'carga aguda / crónica';
-    const zone = acwrVal > 1.5 ? ['Zona de peligro','bad'] : acwrVal > 1.3 ? ['Precaución','warn'] : acwrVal < 0.7 ? ['Infraentrenamiento','warn'] : ['Zona óptima','good'];
-    acwrBadge.innerHTML = `<span class="hero-kpi-badge ${zone[1]}">${zone[0]}</span>`;
+  // 3. ACWR EWMA + weekly load change (4A+4B)
+  const allBnoRehab = rawData.bienestar.filter(r => r.contexto !== 'rehab');
+  const acwrResult  = computeTeamACWR(allBnoRehab, rawData.entrenos);
+  const wkChange    = computeWeeklyLoadChange(allBnoRehab, rawData.entrenos);
+  const acwrEl      = document.getElementById('h-acwr');
+  const acwrSub     = document.getElementById('h-acwr-sub');
+  const acwrBadge   = document.getElementById('h-acwr-badge');
+  if (acwrResult && acwrResult.acwr !== null) {
+    acwrEl.textContent = acwrResult.acwr.toFixed(2);
+    acwrEl.className = 'hero-kpi-num teal';
+    acwrSub.textContent = 'ACWR EWMA · referencia';
+    let badge = '';
+    if (wkChange !== null) {
+      if (wkChange.twoConsecDown) {
+        badge = `<span class="hero-kpi-badge" style="background:rgba(96,165,250,.15);color:var(--blue);border:1px solid rgba(96,165,250,.3)">Posible desentrenamiento</span>`;
+      } else if (wkChange.change >= 15) {
+        badge = `<span class="hero-kpi-badge bad">Incremento brusco ${wkChange.change > 0 ? '+' : ''}${wkChange.change}%</span>`;
+      } else if (wkChange.change >= 10) {
+        badge = `<span class="hero-kpi-badge warn">Incremento de carga +${wkChange.change}%</span>`;
+      } else if (wkChange.change <= -20) {
+        badge = `<span class="hero-kpi-badge" style="background:rgba(96,165,250,.15);color:var(--blue);border:1px solid rgba(96,165,250,.3)">Descenso ${wkChange.change}%</span>`;
+      }
+    }
+    acwrBadge.innerHTML = badge;
   } else {
-    acwrEl.textContent = '—'; acwrEl.className = 'hero-kpi-num'; acwrSub.textContent = 'datos insuficientes'; acwrBadge.innerHTML = '';
+    acwrEl.textContent = '—'; acwrEl.className = 'hero-kpi-num';
+    acwrSub.textContent = 'datos insuficientes (<28 días)'; acwrBadge.innerHTML = '';
   }
 
   // 4. Estado plantilla
@@ -772,6 +786,18 @@ function renderHero(bienestar, bienestarFull, entrenos) {
   lesBadge.innerHTML = badgesHtml;
 }
 
+function computeACWR_EWMA(loads) {
+  if (loads.length < 28) return null;
+  const LAM_A = 0.25, LAM_C = 0.069;
+  const initMean = loads.slice(0, 7).reduce((a,b)=>a+b,0) / 7;
+  let ewmaA = initMean, ewmaC = initMean;
+  for (let i = 0; i < loads.length; i++) {
+    ewmaA = LAM_A * loads[i] + (1 - LAM_A) * ewmaA;
+    ewmaC = LAM_C * loads[i] + (1 - LAM_C) * ewmaC;
+  }
+  return { acwr: ewmaC > 0 ? +(ewmaA/ewmaC).toFixed(2) : null, acuteEWMA: +ewmaA.toFixed(1), chronicEWMA: +ewmaC.toFixed(1) };
+}
+
 function computeTeamACWR(bienestar, allEntrenos) {
   const eByDate = {};
   allEntrenos.forEach(r => { const d=dk(r.fecha); if(d) eByDate[d]=r; });
@@ -781,12 +807,38 @@ function computeTeamACWR(bienestar, allEntrenos) {
   for (let i = 27; i >= 0; i--) {
     const dt = new Date(); dt.setDate(dt.getDate()-i); const d = dk(dt);
     const rpe = bByDate[d] ? avgArr(bByDate[d].map(r=>r.rpe)) : 0;
-    const dur = eByDate[d] ? (eByDate[d].duracion||60) : (bByDate[d]&&rpe>0?60:0);
-    loads.push(rpe>0 ? rpe*dur : 0);
+    let load = 0;
+    if (rpe > 0) {
+      if (eByDate[d] && eByDate[d].duracion > 0) load = rpe * eByDate[d].duracion;
+      else if (bByDate[d] && bByDate[d].some(r => r.tipo === 'P')) load = rpe * 90;
+    }
+    loads.push(load);
   }
-  const acute   = loads.slice(21).reduce((a,b)=>a+b,0) / 7;
-  const chronic = loads.reduce((a,b)=>a+b,0) / 28;
-  return chronic > 0 ? +(acute/chronic).toFixed(2) : null;
+  return computeACWR_EWMA(loads);
+}
+
+function computeWeeklyLoadChange(bienestar, allEntrenos) {
+  const eByDate = {};
+  allEntrenos.forEach(r => { const d=dk(r.fecha); if(d) eByDate[d]=r; });
+  const bByDate = {};
+  bienestar.forEach(r => { const d=dk(r.fecha); if(!d) return; if(!bByDate[d]) bByDate[d]=[]; bByDate[d].push(r); });
+  function wkLoad(startAgo, endAgo) {
+    let total = 0;
+    for (let i = endAgo; i >= startAgo; i--) {
+      const dt = new Date(); dt.setDate(dt.getDate()-i); const d = dk(dt);
+      const rpe = bByDate[d] ? avgArr(bByDate[d].map(r=>r.rpe)) : 0;
+      if (rpe > 0) {
+        if (eByDate[d] && eByDate[d].duracion > 0) total += rpe * eByDate[d].duracion;
+        else if (bByDate[d] && bByDate[d].some(r => r.tipo === 'P')) total += rpe * 90;
+      }
+    }
+    return total;
+  }
+  const w0 = wkLoad(0, 6), w1 = wkLoad(7, 13), w2 = wkLoad(14, 20);
+  if (w1 <= 0) return null;
+  const change = +((w0 - w1) / w1 * 100).toFixed(1);
+  const twoConsecDown = w2 > 0 && change <= -20 && ((w1 - w2) / w2 * 100) <= -20;
+  return { change, twoConsecDown, thisWeek: Math.round(w0), prevWeek: Math.round(w1) };
 }
 
 // ── PULSE BAR ─────────────────────────────────────────────
@@ -830,6 +882,19 @@ function computePlayerStats(bienestarFull, entrenos) {
   const eByDate = {};
   entrenos.forEach(e => { const d=dk(e.fecha); if(d) eByDate[d]=e; });
 
+  function getLoad(bRec, eRec) {
+    if (!bRec || bRec.rpe <= 0) return 0;
+    if (eRec && eRec.duracion > 0) return bRec.rpe * eRec.duracion;
+    if (bRec.tipo === 'P') return bRec.rpe * 90;
+    return 0;
+  }
+
+  function sdOf(vals) {
+    if (!vals.length) return 0;
+    const m = vals.reduce((a,b)=>a+b,0) / vals.length;
+    return Math.sqrt(vals.reduce((a,b)=>a+(b-m)**2,0) / vals.length);
+  }
+
   return players.map(nombre => {
     const curr = current.filter(r => r.jugador === nombre);
     const prev = previous.filter(r => r.jugador === nombre);
@@ -844,25 +909,84 @@ function computePlayerStats(bienestarFull, entrenos) {
     const estres  = +avgArr(curr.map(r=>r.estres).filter(v=>v>0)).toFixed(1);
     const rpe     = +avgArr(curr.map(r=>r.rpe)).toFixed(1);
 
-    // Individual ACWR (rolling 28 days)
-    const iLoads = [];
+    // Build player record lookup for efficiency
+    const iByDate = {};
+    rawData.bienestar.filter(r => r.jugador === nombre).forEach(r => { const d=dk(r.fecha); iByDate[d]=r; });
+
+    // 4A — Individual ACWR EWMA (rolling 28 days, zero-load fix — 4E)
+    const iLoads28 = [];
     for (let i = 27; i >= 0; i--) {
       const dt = new Date(); dt.setDate(dt.getDate()-i); const d = dk(dt);
-      const bRec = rawData.bienestar.find(r => r.jugador===nombre && dk(r.fecha)===d);
+      const bRec = iByDate[d];
       const eRec = eByDate[d] || rawData.entrenos.find(e => dk(e.fecha)===d);
-      const load = bRec && bRec.rpe > 0 ? bRec.rpe*(eRec?eRec.duracion:60) : 0;
-      iLoads.push(load);
+      iLoads28.push(getLoad(bRec, eRec));
     }
-    const acute28  = iLoads.slice(21).reduce((a,b)=>a+b,0)/7;
-    const chronic28 = iLoads.reduce((a,b)=>a+b,0)/28;
-    const acwr = chronic28 > 0 ? +(acute28/chronic28).toFixed(2) : null;
+    const ewmaRes = computeACWR_EWMA(iLoads28);
+    const acwr      = ewmaRes ? ewmaRes.acwr : null;
+    const acuteEWMA = ewmaRes ? ewmaRes.acuteEWMA : null;
 
-    // sRPE individual (avg load per session in period)
+    // 4E — sRPE individual (zero-load fix)
     const sRPEvals = curr.map(r => {
       const eRec = eByDate[dk(r.fecha)];
-      return r.rpe > 0 ? Math.round(r.rpe * (eRec ? eRec.duracion : 60)) : 0;
+      return getLoad(r, eRec);
     }).filter(v => v > 0);
     const sRPE = sRPEvals.length ? Math.round(sRPEvals.reduce((a,b)=>a+b,0)/sRPEvals.length) : 0;
+
+    // 4B — Individual weekly load change
+    function indWkLoad(startAgo, endAgo) {
+      let total = 0;
+      for (let i = endAgo; i >= startAgo; i--) {
+        const dt = new Date(); dt.setDate(dt.getDate()-i); const d = dk(dt);
+        const eRec = eByDate[d] || rawData.entrenos.find(e => dk(e.fecha)===d);
+        total += getLoad(iByDate[d], eRec);
+      }
+      return total;
+    }
+    const iW0 = indWkLoad(0, 6), iW1 = indWkLoad(7, 13), iW2 = indWkLoad(14, 20);
+    const weeklyChangePct = iW1 > 0 ? +((iW0 - iW1) / iW1 * 100).toFixed(1) : null;
+    const twoConsecDown   = iW1 > 0 && iW2 > 0 && weeklyChangePct !== null &&
+                            weeklyChangePct <= -20 && ((iW1 - iW2) / iW2 * 100) <= -20;
+
+    // 4D — Foster: monotonía, strain, CV (current week)
+    const weekLoads = [];
+    for (let i = 6; i >= 0; i--) {
+      const dt = new Date(); dt.setDate(dt.getDate()-i); const d = dk(dt);
+      const eRec = eByDate[d] || rawData.entrenos.find(e => dk(e.fecha)===d);
+      weekLoads.push(getLoad(iByDate[d], eRec));
+    }
+    const wkTotal    = weekLoads.reduce((a,b)=>a+b,0);
+    const wkMean     = wkTotal / 7;
+    const wkSD       = sdOf(weekLoads);
+    let monotony = null, strain = null, cv = null;
+    if (weekLoads.filter(v=>v>0).length >= 3 && wkSD > 0) {
+      monotony = +(wkMean / wkSD).toFixed(2);
+      strain   = Math.round(wkTotal * monotony);
+      cv       = +(wkSD / wkMean * 100).toFixed(1);
+    }
+
+    // 4C — SWC individual (21+ records required)
+    const allRecs = rawData.bienestar.filter(r => r.jugador === nombre && r.contexto !== 'rehab');
+    let swcBaseline = null, swcSD = null, swcAlerts = {};
+    if (allRecs.length >= 21) {
+      const totals = allRecs.map(r => r.total);
+      swcBaseline = +(totals.reduce((a,b)=>a+b,0) / totals.length).toFixed(1);
+      swcSD       = +sdOf(totals).toFixed(2);
+      const swcSueno  = 0.5 * sdOf(allRecs.map(r=>r.sueno));
+      const swcFatiga = 0.5 * sdOf(allRecs.map(r=>r.fatiga));
+      const swcDolor  = 0.5 * sdOf(allRecs.map(r=>r.dolorMuscular));
+      const estresAll = allRecs.map(r=>r.estres).filter(v=>v>0);
+      const swcEstres = estresAll.length ? 0.5 * sdOf(estresAll) : 0;
+      const mSueno  = allRecs.reduce((a,r)=>a+r.sueno,0) / allRecs.length;
+      const mFatiga = allRecs.reduce((a,r)=>a+r.fatiga,0) / allRecs.length;
+      const mDolor  = allRecs.reduce((a,r)=>a+r.dolorMuscular,0) / allRecs.length;
+      const mEstres = estresAll.length ? estresAll.reduce((a,b)=>a+b,0) / estresAll.length : 0;
+      swcAlerts = {
+        sueno:  sueno  > mSueno  + swcSueno,
+        fatiga: fatiga > mFatiga + swcFatiga,
+        dolor:  dolor  > mDolor  + swcDolor,
+        estres: +estres > mEstres + swcEstres
+      };
+    }
 
     const latest   = [...curr].sort((a,b)=>dk(b.fecha).localeCompare(dk(a.fecha)))[0];
     const lastDate = latest ? fmtDate(dk(latest.fecha)) : '—';
@@ -872,18 +996,18 @@ function computePlayerStats(bienestarFull, entrenos) {
 
     const alertas  = curr.filter(r=>r.total>0&&r.total<=13).length;
     const alertPct = curr.length ? alertas/curr.length : 0;
-
-    // Regularidad: % days in period with a record
-    const totalDays = pLen;
-    const regularidad = Math.round((curr.length / totalDays) * 100);
+    const regularidad = Math.round((curr.length / pLen) * 100);
 
     let riesgo;
     if (isRehab) riesgo = 'RIESGO';
-    else if (hooAvg < 14 || (acwr!==null&&acwr>1.5) || alertPct > 0.35) riesgo = 'RIESGO';
-    else if (hooAvg < 18 || (acwr!==null&&(acwr>1.3||acwr<0.7)) || alertPct > 0.1) riesgo = 'ATENCIÓN';
+    else if (hooAvg < 14 || alertPct > 0.35) riesgo = 'RIESGO';
+    else if (hooAvg < 18 || alertPct > 0.1 || (weeklyChangePct !== null && weeklyChangePct >= 15)) riesgo = 'ATENCIÓN';
     else riesgo = 'ÓPTIMO';
 
-    return { nombre, hooAvg, hooPrev, hooTrend, sueno, fatiga, dolor, estres, rpe, acwr, sRPE,
+    return { nombre, hooAvg, hooPrev, hooTrend, sueno, fatiga, dolor, estres, rpe,
+             acwr, acuteEWMA, sRPE, weeklyChangePct, twoConsecDown,
+             monotony, strain, cv,
+             swcBaseline, swcSD, swcAlerts,
              sesiones: curr.length, alertas, alertPct, regularidad, lastDate,
              isRehab, lesion, riesgo, estado: isRehab ? 'rehab' : 'activo' };
   }).filter(Boolean).sort((a,b) => {
@@ -909,7 +1033,7 @@ function renderPlayerCards(stats) {
     const tCls   = p.hooTrend > 0.5 ? 'up' : p.hooTrend < -0.5 ? 'down' : '';
     const tArrow = p.hooTrend > 0.5 ? '↑' : p.hooTrend < -0.5 ? '↓' : '→';
     const acwrStr = p.acwr !== null
-      ? `<span class="${p.acwr>1.5?'bad':p.acwr>1.3?'warn':p.acwr<0.7?'warn':'good'}">${p.acwr}</span>`
+      ? `<span>${p.acwr}</span>`
       : '<span style="color:var(--text-dim)">—</span>';
 
     const pctS = Math.round((p.sueno/7)*100);
@@ -918,9 +1042,26 @@ function renderPlayerCards(stats) {
     const pctE = Math.round(((p.estres||0)/7)*100);
     const pctR = Math.round((p.rpe/10)*100);
 
-    const alertPctStr = p.sesiones ? Math.round(p.alertPct*100) + '%' : '—';
-    const alertPctCls = p.alertPct > 0.35 ? 'bad' : p.alertPct > 0.1 ? 'warn' : p.sesiones ? 'good' : '';
-    const regCls      = p.regularidad >= 80 ? 'good' : p.regularidad >= 50 ? '' : 'warn';
+    // SWC above-baseline indicators (4C)
+    const swcS = p.swcAlerts && p.swcAlerts.sueno  ? ' <span style="color:var(--teal-hi);font-size:.5rem;vertical-align:middle">▲</span>' : '';
+    const swcF = p.swcAlerts && p.swcAlerts.fatiga ? ' <span style="color:var(--teal-hi);font-size:.5rem;vertical-align:middle">▲</span>' : '';
+    const swcD = p.swcAlerts && p.swcAlerts.dolor  ? ' <span style="color:var(--teal-hi);font-size:.5rem;vertical-align:middle">▲</span>' : '';
+    const swcE = p.swcAlerts && p.swcAlerts.estres ? ' <span style="color:var(--teal-hi);font-size:.5rem;vertical-align:middle">▲</span>' : '';
+
+    // Weekly load change display (4B)
+    let wkChgTxt = '—', wkChgCls = '';
+    if (p.weeklyChangePct !== null) {
+      wkChgTxt = (p.weeklyChangePct > 0 ? '+' : '') + p.weeklyChangePct + '%';
+      if (p.twoConsecDown) { wkChgCls = ''; wkChgTxt += ' ↓↓'; }
+      else if (p.weeklyChangePct >= 15) wkChgCls = 'bad';
+      else if (p.weeklyChangePct >= 10) wkChgCls = 'warn';
+    }
+
+    // Monotony display (4D)
+    const monTxt = p.monotony !== null ? p.monotony.toFixed(2) : '—';
+    const monCls = p.monotony !== null ? (p.monotony > 2.5 ? 'bad' : p.monotony > 2.0 ? 'warn' : 'good') : '';
+
+    const regCls = p.regularidad >= 80 ? 'good' : p.regularidad >= 50 ? '' : 'warn';
 
     const aiId = 'ai-' + p.nombre.replace(/\s+/g,'_');
     const existingAI = aiAnalyses[p.nombre];
@@ -940,22 +1081,22 @@ function renderPlayerCards(stats) {
       <div class="pc-metrics">
         <div class="pc-metric">
           <div class="pc-metric-label">Sueño</div>
-          <div class="pc-metric-val ${mClass(p.sueno,7)}">${p.sueno}<span style="font-size:.58rem;color:var(--text-dim)">/7</span></div>
+          <div class="pc-metric-val ${mClass(p.sueno,7)}">${p.sueno}<span style="font-size:.58rem;color:var(--text-dim)">/7</span>${swcS}</div>
           <div class="pc-metric-bar"><div class="pc-metric-fill ${mClass(p.sueno,7)}" style="width:${pctS}%"></div></div>
         </div>
         <div class="pc-metric">
           <div class="pc-metric-label">Fatiga</div>
-          <div class="pc-metric-val ${mClass(p.fatiga,7)}">${p.fatiga}<span style="font-size:.58rem;color:var(--text-dim)">/7</span></div>
+          <div class="pc-metric-val ${mClass(p.fatiga,7)}">${p.fatiga}<span style="font-size:.58rem;color:var(--text-dim)">/7</span>${swcF}</div>
           <div class="pc-metric-bar"><div class="pc-metric-fill ${mClass(p.fatiga,7)}" style="width:${pctF}%"></div></div>
         </div>
         <div class="pc-metric">
           <div class="pc-metric-label">Dolor Musc.</div>
-          <div class="pc-metric-val ${mClass(p.dolor,7)}">${p.dolor}<span style="font-size:.58rem;color:var(--text-dim)">/7</span></div>
+          <div class="pc-metric-val ${mClass(p.dolor,7)}">${p.dolor}<span style="font-size:.58rem;color:var(--text-dim)">/7</span>${swcD}</div>
           <div class="pc-metric-bar"><div class="pc-metric-fill ${mClass(p.dolor,7)}" style="width:${pctD}%"></div></div>
         </div>
         <div class="pc-metric">
           <div class="pc-metric-label">Estrés</div>
-          <div class="pc-metric-val ${mClass(p.estres||0,7)}">${p.estres||'—'}${p.estres?'<span style="font-size:.58rem;color:var(--text-dim)">/7</span>':''}</div>
+          <div class="pc-metric-val ${mClass(p.estres||0,7)}">${p.estres||'—'}${p.estres?'<span style="font-size:.58rem;color:var(--text-dim)">/7</span>':''}${swcE}</div>
           <div class="pc-metric-bar"><div class="pc-metric-fill ${mClass(p.estres||0,7)}" style="width:${pctE}%"></div></div>
         </div>
         <div class="pc-metric">
@@ -964,7 +1105,7 @@ function renderPlayerCards(stats) {
           <div class="pc-metric-bar"><div class="pc-metric-fill" style="width:${pctR}%;background:var(--blue)"></div></div>
         </div>
         <div class="pc-metric">
-          <div class="pc-metric-label">ACWR</div>
+          <div class="pc-metric-label">ACWR EWMA</div>
           <div class="pc-metric-val">${acwrStr}</div>
           <div class="pc-metric-bar" style="background:transparent"></div>
         </div>
@@ -976,12 +1117,12 @@ function renderPlayerCards(stats) {
           <div class="pc-stat-val">${p.sRPE || '—'} UA</div>
         </div>
         <div class="pc-stat">
-          <div class="pc-stat-label">% alertas</div>
-          <div class="pc-stat-val ${alertPctCls}">${alertPctStr}</div>
+          <div class="pc-stat-label">Δ Carga semana</div>
+          <div class="pc-stat-val ${wkChgCls}">${wkChgTxt}</div>
         </div>
         <div class="pc-stat">
-          <div class="pc-stat-label">Regularidad</div>
-          <div class="pc-stat-val ${regCls}">${p.regularidad}%</div>
+          <div class="pc-stat-label">Monotonía</div>
+          <div class="pc-stat-val ${monCls}">${monTxt}</div>
         </div>
         <div class="pc-stat">
           <div class="pc-stat-label">Tendencia</div>
@@ -1000,13 +1141,25 @@ function renderPlayerCards(stats) {
 
 function renderAIContent(ai) {
   const prioLabel = ai.prioridad || 'MEDIA';
+  const patron = ai.patron && ai.patron !== 'Normal' ? ai.patron : null;
   const indicators = (ai.indicadores||[]).map(i => `<span class="pc-ai-tag">${i}</span>`).join('');
   const plan = (ai.plan||[]).map((item,i) =>
     `<div class="pc-ai-plan-item"><div class="pc-ai-plan-num">${i+1}</div><div>${item}</div></div>`
   ).join('');
+  const patronColors = {
+    'Sobrecarga aguda':             ['rgba(192,112,112,.15)','var(--red)','rgba(192,112,112,.3)'],
+    'Sobreentrenamiento funcional': ['rgba(201,169,110,.15)','var(--amber)','rgba(201,169,110,.3)'],
+    'Estrés externo':               ['rgba(167,139,250,.15)','#a78bfa','rgba(167,139,250,.3)'],
+    'Desentrenamiento':             ['rgba(96,165,250,.15)','var(--blue)','rgba(96,165,250,.3)']
+  };
+  const pc = patron && patronColors[patron] ? patronColors[patron] : null;
+  const patronTag = pc
+    ? `<span style="font-size:.52rem;padding:2px 7px;border-radius:var(--r);background:${pc[0]};color:${pc[1]};border:1px solid ${pc[2]}">${patron}</span>`
+    : '';
   return `<div class="pc-ai-content">
     <div class="pc-ai-header">
       <div class="pc-ai-label">Análisis preparador físico</div>
+      ${patronTag}
       <div class="pc-ai-priority ${prioLabel}">Prioridad ${prioLabel}</div>
     </div>
     ${ai.indicadores&&ai.indicadores.length?`<div class="pc-ai-indicators">${indicators}</div>`:''}
@@ -1053,8 +1206,12 @@ async function refreshAI() {
       nombre: p.nombre, estado: p.estado, lesion: p.lesion,
       hooAvg: p.hooAvg, hooTrend: p.hooTrend,
       sueno: p.sueno, fatiga: p.fatiga, dolor: p.dolor, estres: p.estres||0,
-      acwr: p.acwr, rpe: p.rpe, sRPE: p.sRPE,
-      sesiones: p.sesiones, alertas: p.alertas, regularidad: p.regularidad
+      acwr: p.acwr, acuteEWMA: p.acuteEWMA,
+      rpe: p.rpe, sRPE: p.sRPE,
+      sesiones: p.sesiones, alertas: p.alertas, regularidad: p.regularidad,
+      weeklyChangePct: p.weeklyChangePct, twoConsecDown: p.twoConsecDown,
+      monotony: p.monotony, strain: p.strain, cv: p.cv,
+      swcBaseline: p.swcBaseline, swcSD: p.swcSD, swcAlerts: p.swcAlerts
     }));
     const r = await api({
       action: 'generate_analysis',
@@ -1153,41 +1310,50 @@ function renderWellness(bienestar) {
   });
 }
 
-// ── ACWR ──────────────────────────────────────────────────
+// ── ACWR EWMA CHART ───────────────────────────────────────
 function renderACWR(allB, allE) {
   const ctx = getCtx('chart-acwr');
   if (!ctx) return;
   if (cAcwr) { cAcwr.destroy(); cAcwr = null; }
   const eByDate = {}; allE.forEach(r=>{const d=dk(r.fecha);if(d)eByDate[d]=r;});
   const bByDate = {}; allB.forEach(r=>{const d=dk(r.fecha);if(!d)return;if(!bByDate[d])bByDate[d]=[];bByDate[d].push(r);});
-  const loads = [];
-  for (let i=59;i>=0;i--) {
-    const dt=new Date();dt.setDate(dt.getDate()-i);const d=dk(dt);
-    const rpe=bByDate[d]?avgArr(bByDate[d].map(r=>r.rpe)):0;
-    const dur=eByDate[d]?(eByDate[d].duracion||60):(bByDate[d]&&rpe>0?60:0);
-    loads.push({d,load:rpe>0?rpe*dur:0});
+  const days = 56;
+  const dailyLoads = [];
+  for (let i = days-1; i >= 0; i--) {
+    const dt=new Date(); dt.setDate(dt.getDate()-i); const d=dk(dt);
+    const rpe = bByDate[d] ? avgArr(bByDate[d].map(r=>r.rpe)) : 0;
+    let load = 0;
+    if (rpe > 0) {
+      if (eByDate[d] && eByDate[d].duracion > 0) load = rpe * eByDate[d].duracion;
+      else if (bByDate[d] && bByDate[d].some(r => r.tipo === 'P')) load = rpe * 90;
+    }
+    dailyLoads.push({d, load});
   }
-  const labels=[],acwr=[],acute=[];
-  for (let i=27;i<loads.length;i++) {
-    const a=loads.slice(i-6,i+1).reduce((s,l)=>s+l.load,0)/7;
-    const c=loads.slice(i-27,i+1).reduce((s,l)=>s+l.load,0)/28;
-    labels.push(fmtDate(loads[i].d));
-    acute.push(+a.toFixed(0));
-    acwr.push(c>0?+(a/c).toFixed(2):null);
+  const labels=[], acwrVals=[], acuteVals=[];
+  const LAM_A=0.25, LAM_C=0.069;
+  const initMean = dailyLoads.slice(0,7).reduce((s,x)=>s+x.load,0)/7;
+  let ewmaA=initMean, ewmaC=initMean;
+  for (let i=0; i<dailyLoads.length; i++) {
+    ewmaA = LAM_A*dailyLoads[i].load + (1-LAM_A)*ewmaA;
+    ewmaC = LAM_C*dailyLoads[i].load + (1-LAM_C)*ewmaC;
+    if (i >= 27) {
+      labels.push(fmtDate(dailyLoads[i].d));
+      acuteVals.push(+ewmaA.toFixed(0));
+      acwrVals.push(ewmaC > 0 ? +(ewmaA/ewmaC).toFixed(2) : null);
+    }
   }
-  if (acwr.every(v=>v===null||v===0)){showEmpty(ctx.canvas,'📉','Se necesitan ≥28 días de RPE para el ACWR');return;}
+  if (acwrVals.every(v=>v===null)){showEmpty(ctx.canvas,'📉','Se necesitan ≥28 días de datos para el ACWR EWMA');return;}
   cAcwr = new Chart(ctx,{
     type:'bar', data:{labels, datasets:[
-      {type:'bar',  label:'Carga aguda (UA)', data:acute, backgroundColor:'rgba(75,168,130,.12)', borderColor:'#4BA882', borderWidth:1, yAxisID:'y1'},
-      {type:'line', label:'ACWR',             data:acwr,  borderColor:'#60a5fa', backgroundColor:'transparent', borderWidth:2, pointRadius:3, tension:.3, yAxisID:'y2',
-        segment:{borderColor:ctx=>{const v=ctx.p1.parsed.y;return v>1.5?'#C07070':v>1.3?'#C9A96E':'#60a5fa';}}}
+      {type:'bar',  label:'Carga aguda EWMA (UA)', data:acuteVals, backgroundColor:'rgba(75,168,130,.12)', borderColor:'#4BA882', borderWidth:1, yAxisID:'y1'},
+      {type:'line', label:'ACWR EWMA',             data:acwrVals, borderColor:'#60a5fa', backgroundColor:'transparent', borderWidth:2, pointRadius:3, tension:.3, yAxisID:'y2'}
     ]},
     options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
       plugins:{legend:{labels:{boxWidth:12,color:'#76767E',font:{size:11}}},tooltip:{backgroundColor:'#191920',borderColor:'#2A2A36',borderWidth:1}},
       scales:{
         x:{grid:{color:'#1E1E26'},ticks:{maxTicksLimit:12}},
-        y1:{position:'left',grid:{color:'#1E1E26'},title:{display:true,text:'Carga (UA)',color:'#76767E',font:{size:11}}},
-        y2:{position:'right',min:0,max:2.2,grid:{drawOnChartArea:false},title:{display:true,text:'ACWR',color:'#60a5fa',font:{size:11}}}
+        y1:{position:'left',grid:{color:'#1E1E26'},title:{display:true,text:'Carga aguda (UA)',color:'#76767E',font:{size:11}}},
+        y2:{position:'right',min:0,max:2.2,grid:{drawOnChartArea:false},title:{display:true,text:'ACWR EWMA',color:'#60a5fa',font:{size:11}}}
       }
     }
   });
