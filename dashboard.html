@@ -1001,7 +1001,7 @@ function computePlayerStats(bienestarFull, entrenos) {
     let riesgo;
     if (isRehab) riesgo = 'RIESGO';
     else if (hooAvg < 14 || alertPct > 0.35) riesgo = 'RIESGO';
-    else if (hooAvg < 18 || alertPct > 0.1 || (weeklyChangePct !== null && weeklyChangePct >= 15)) riesgo = 'ATENCIÓN';
+    else if (hooAvg < 18 || alertPct > 0.2) riesgo = 'ATENCIÓN';
     else riesgo = 'ÓPTIMO';
 
     return { nombre, hooAvg, hooPrev, hooTrend, sueno, fatiga, dolor, estres, rpe,
