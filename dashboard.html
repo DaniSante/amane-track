@@ -1446,4 +1446,30 @@ function renderHeatmap(allB) {
       cell.addEventListener('mousemove',e=>{
         const tt=document.getElementById('hm-tooltip');
         if(entry){
-          tt.innerHTML=`<div class="tt-n
+          tt.innerHTML=`<div class="tt-name">${player}</div><div class="tt-row">📅 ${d}</div>
+            <div class="tt-row">🌙 Sueño<span>${entry.sueno}/7</span></div>
+            <div class="tt-row">⚡ Fatiga<span>${entry.fatiga}/7</span></div>
+            <div class="tt-row">💪 Dolor<span>${entry.dolorMuscular}/7</span></div>
+            <div class="tt-row">🧠 Estrés<span>${entry.estres||'—'}/7</span></div>
+            <div class="tt-row">📊 Hooper<span style="font-weight:600">${entry.total}/28</span></div>
+            ${entry.rpe?`<div class="tt-row">🏃 RPE<span>${entry.rpe}/10</span></div>`:''}`;
+        } else {
+          tt.innerHTML=`<div class="tt-name">${player}</div><div class="tt-row">Sin registro</div>`;
+        }
+        tt.style.display='block';tt.style.left=(e.clientX+14)+'px';tt.style.top=(e.clientY+14)+'px';
+      });
+      cell.addEventListener('mouseleave',()=>{document.getElementById('hm-tooltip').style.display='none';});
+      hm.appendChild(cell);
+    });
+  });
+}
+
+// ── NAV ───────────────────────────────────────────────────
+function goStaff() {
+  window.location.href='staff.html?team='+encodeURIComponent(TEAM_ID)+'&key='+encodeURIComponent(TEAM_KEY);
+}
+
+init();
+</script>
+</body>
+</html>
