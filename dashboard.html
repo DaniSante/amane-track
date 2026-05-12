@@ -977,7 +977,7 @@ function computePlayerStats(bienestarFull, entrenos) {
 
     // 4C — SWC individual (21+ records required)
     const allRecs = rawData.bienestar.filter(r => r.jugador === nombre && r.contexto !== 'rehab');
-    let swcBaseline = null, swcSD = null, swcAlerts = {};
+    let swcBaseline = null, swcSD = null, swcAlerts = {}, swcWarnings = {};
     if (allRecs.length >= 21) {
       const totals = allRecs.map(r => r.total);
       swcBaseline = +(totals.reduce((a,b)=>a+b,0) / totals.length).toFixed(1);
@@ -997,6 +997,13 @@ function computePlayerStats(bienestarFull, entrenos) {
         dolor:  dolor  > mDolor  + swcDolor,
         estres: +estres > mEstres + swcEstres
       };
+      // SWC deterioration: meaningful drop BELOW individual baseline
+      swcWarnings = {
+        sueno:  sueno  < mSueno  - swcSueno,
+        fatiga: fatiga < mFatiga - swcFatiga,
+        dolor:  dolor  < mDolor  - swcDolor,
+        estres: +estres > 0 && +estres < mEstres - swcEstres
+      };
     }
 
     const latest   = [...curr].sort((a,b)=>dk(b.fecha).localeCompare(dk(a.fecha)))[0];
@@ -1011,14 +1018,14 @@ function computePlayerStats(bienestarFull, entrenos) {
 
     let riesgo;
     if (isRehab) riesgo = 'RIESGO';
-    else if (hooAvg < 14 || alertPct > 0.35) riesgo = 'RIESGO';
-    else if (hooAvg < 18 || alertPct > 0.2) riesgo = 'ATENCIÓN';
+    else if (hooAvg < 14 || alertPct > 0.35 || Object.values(swcWarnings).filter(Boolean).length >= 2) riesgo = 'RIESGO';
+    else if (hooAvg < 18 || alertPct > 0.2  || Object.values(swcWarnings).filter(Boolean).length >= 1) riesgo = 'ATENCIÓN';
     else riesgo = 'ÓPTIMO';
 
     return { nombre, hooAvg, hooPrev, hooTrend, sueno, fatiga, dolor, estres, rpe,
              acwr, acuteEWMA, sRPE, weeklyChangePct, twoConsecDown,
              monotony, strain, cv,
-             swcBaseline, swcSD, swcAlerts,
+             swcBaseline, swcSD, swcAlerts, swcWarnings,
              sesiones: curr.length, alertas, alertPct, regularidad, lastDate,
              isRehab, lesion, riesgo, estado: isRehab ? 'rehab' : 'activo' };
   }).filter(Boolean).sort((a,b) => {
@@ -1053,11 +1060,15 @@ function renderPlayerCards(stats) {
     const pctE = Math.round(((p.estres||0)/7)*100);
     const pctR = Math.round((p.rpe/10)*100);
 
-    // SWC above-baseline indicators (4C)
-    const swcS = p.swcAlerts && p.swcAlerts.sueno  ? ' <span style="color:var(--teal-hi);font-size:.5rem;vertical-align:middle">▲</span>' : '';
-    const swcF = p.swcAlerts && p.swcAlerts.fatiga ? ' <span style="color:var(--teal-hi);font-size:.5rem;vertical-align:middle">▲</span>' : '';
-    const swcD = p.swcAlerts && p.swcAlerts.dolor  ? ' <span style="color:var(--teal-hi);font-size:.5rem;vertical-align:middle">▲</span>' : '';
-    const swcE = p.swcAlerts && p.swcAlerts.estres ? ' <span style="color:var(--teal-hi);font-size:.5rem;vertical-align:middle">▲</span>' : '';
+    // SWC above-baseline (mejora) ▲ y below-baseline (deterioro) ▼
+    const swcS = (p.swcAlerts?.sueno   ? ' <span style="color:var(--teal-hi);font-size:.5rem;vertical-align:middle" title="Por encima de tu baseline">▲</span>' : '')
+               + (p.swcWarnings?.sueno  ? ' <span style="color:var(--red);font-size:.5rem;vertical-align:middle" title="Caída significativa vs baseline">▼</span>' : '');
+    const swcF = (p.swcAlerts?.fatiga  ? ' <span style="color:var(--teal-hi);font-size:.5rem;vertical-align:middle" title="Por encima de tu baseline">▲</span>' : '')
+               + (p.swcWarnings?.fatiga ? ' <span style="color:var(--red);font-size:.5rem;vertical-align:middle" title="Caída significativa vs baseline">▼</span>' : '');
+    const swcD = (p.swcAlerts?.dolor   ? ' <span style="color:var(--teal-hi);font-size:.5rem;vertical-align:middle" title="Por encima de tu baseline">▲</span>' : '')
+               + (p.swcWarnings?.dolor  ? ' <span style="color:var(--red);font-size:.5rem;vertical-align:middle" title="Caída significativa vs baseline">▼</span>' : '');
+    const swcE = (p.swcAlerts?.estres  ? ' <span style="color:var(--teal-hi);font-size:.5rem;vertical-align:middle" title="Por encima de tu baseline">▲</span>' : '')
+               + (p.swcWarnings?.estres ? ' <span style="color:var(--red);font-size:.5rem;vertical-align:middle" title="Caída significativa vs baseline">▼</span>' : '');
 
     // Weekly load change display (4B)
     let wkChgTxt = '—', wkChgCls = '';
@@ -1222,7 +1233,7 @@ async function refreshAI() {
       sesiones: p.sesiones, alertas: p.alertas, regularidad: p.regularidad,
       weeklyChangePct: p.weeklyChangePct, twoConsecDown: p.twoConsecDown,
       monotony: p.monotony, strain: p.strain, cv: p.cv,
-      swcBaseline: p.swcBaseline, swcSD: p.swcSD, swcAlerts: p.swcAlerts
+      swcBaseline: p.swcBaseline, swcSD: p.swcSD, swcAlerts: p.swcAlerts, swcWarnings: p.swcWarnings
     }));
     const r = await api({
       action: 'generate_analysis',
@@ -1435,30 +1446,4 @@ function renderHeatmap(allB) {
       cell.addEventListener('mousemove',e=>{
         const tt=document.getElementById('hm-tooltip');
         if(entry){
-          tt.innerHTML=`<div class="tt-name">${player}</div><div class="tt-row">📅 ${d}</div>
-            <div class="tt-row">🌙 Sueño<span>${entry.sueno}/7</span></div>
-            <div class="tt-row">⚡ Fatiga<span>${entry.fatiga}/7</span></div>
-            <div class="tt-row">💪 Dolor<span>${entry.dolorMuscular}/7</span></div>
-            <div class="tt-row">🧠 Estrés<span>${entry.estres||'—'}/7</span></div>
-            <div class="tt-row">📊 Hooper<span style="font-weight:600">${entry.total}/28</span></div>
-            ${entry.rpe?`<div class="tt-row">🏃 RPE<span>${entry.rpe}/10</span></div>`:''}`;
-        } else {
-          tt.innerHTML=`<div class="tt-name">${player}</div><div class="tt-row">Sin registro</div>`;
-        }
-        tt.style.display='block';tt.style.left=(e.clientX+14)+'px';tt.style.top=(e.clientY+14)+'px';
-      });
-      cell.addEventListener('mouseleave',()=>{document.getElementById('hm-tooltip').style.display='none';});
-      hm.appendChild(cell);
-    });
-  });
-}
-
-// ── NAV ───────────────────────────────────────────────────
-function goStaff() {
-  window.location.href='staff.html?team='+encodeURIComponent(TEAM_ID)+'&key='+encodeURIComponent(TEAM_KEY);
-}
-
-init();
-</script>
-</body>
-</html>
+          tt.innerHTML=`<div class="tt-name">${player}</div><div class

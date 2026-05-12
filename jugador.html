@@ -571,7 +571,7 @@ async function guardar() {
         teamId: TEAM_ID,
         teamKey: TEAM_KEY,
         type: 'bienestar',
-        row: [fecha, nombre, tipo, sueno, fatiga, dolor, total, rpe, lesion, lesionTxt, comentario, estres]
+        row: [fecha, nombre, tipo, sueno, fatiga, dolor, total, rpe, lesion, lesionTxt, comentario, 'equipo', estres]
       })
     });
     const data = await r.json();
@@ -615,5 +615,4 @@ function toast(msg) {
   setTimeout(()=>t.classList.remove('show'),3200);
 }
 </script>
-</body>
-</html>
+</body
