@@ -882,7 +882,7 @@ function computePlayerStats(bienestarFull, entrenos) {
   const pLen     = Math.max(1, Math.ceil((new Date()-cutoff)/86400000));
   const prevCut  = new Date(cutoff); prevCut.setDate(prevCut.getDate()-pLen);
   const current  = bienestarFull.filter(r => toDate(r.fecha) >= cutoff);
-  const previous = bienestarFull.filter(r => toDate(r.fecha) >= prevCut && toDate(r.fecha) < cutoff);
+  const previous = rawData.bienestar.filter(r => toDate(r.fecha) >= prevCut && toDate(r.fecha) < cutoff && r.contexto !== 'rehab');
   const players  = [...new Set(bienestarFull.map(r=>r.jugador))].filter(Boolean);
 
   const eByDate = {};
@@ -1446,4 +1446,4 @@ function renderHeatmap(allB) {
       cell.addEventListener('mousemove',e=>{
         const tt=document.getElementById('hm-tooltip');
         if(entry){
-          tt.innerHTML=`<div class="tt-name">${player}</div><div class
+          tt.innerHTML=`<div class="tt-n
