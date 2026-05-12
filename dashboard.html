@@ -717,8 +717,10 @@ function renderHero(bienestar, bienestarFull, entrenos) {
   dateDays.forEach(d => {
     const dayB   = bienestar.filter(r => dk(r.fecha) === d);
     const rpeAvg = avgArr(dayB.map(r => r.rpe));
-    const dur    = eByDate[d] ? (eByDate[d].duracion || 60) : 60;
-    if (rpeAvg > 0) sessionLoads.push(Math.round(rpeAvg * dur));
+    const isPartidoDay = dayB.some(r => r.tipo === 'P');
+    const dur = eByDate[d] && eByDate[d].duracion > 0
+      ? eByDate[d].duracion : (isPartidoDay ? 90 : 0);
+    if (rpeAvg > 0 && dur > 0) sessionLoads.push(Math.round(rpeAvg * dur));
   });
   if (sessionLoads.length) {
     const avgLoad = Math.round(sessionLoads.reduce((a,b) => a+b, 0) / sessionLoads.length);
@@ -762,14 +764,14 @@ function renderHero(bienestar, bienestarFull, entrenos) {
     acwrSub.textContent = 'datos insuficientes (<28 días)'; acwrBadge.innerHTML = '';
   }
 
-  // 4. Estado plantilla
-  const allPlayers = [...new Set(bienestarFull.map(r => r.jugador))].filter(Boolean);
+  // 4. Estado plantilla — always use full history for injury detection
+  const allPlayers = [...new Set(rawData.bienestar.map(r => r.jugador))].filter(Boolean);
   const latestAll = {};
-  bienestarFull.forEach(r => {
+  rawData.bienestar.forEach(r => {
     if (!latestAll[r.jugador] || dk(r.fecha) > dk(latestAll[r.jugador].fecha)) latestAll[r.jugador] = r;
   });
   const lesionados = Object.values(latestAll).filter(r => r.lesion && r.lesion !== '' && r.lesion.toLowerCase() !== 'no' && r.lesion !== 'N');
-  const rehab = bienestarFull.filter(r => r.contexto === 'rehab');
+  const rehab = rawData.bienestar.filter(r => r.contexto === 'rehab');
   const rehabNames = [...new Set(rehab.map(r => r.jugador))];
   const disponibles = allPlayers.length - lesionados.length;
   const lesEl  = document.getElementById('h-lesiones');
@@ -803,9 +805,13 @@ function computeTeamACWR(bienestar, allEntrenos) {
   allEntrenos.forEach(r => { const d=dk(r.fecha); if(d) eByDate[d]=r; });
   const bByDate = {};
   bienestar.forEach(r => { const d=dk(r.fecha); if(!d) return; if(!bByDate[d]) bByDate[d]=[]; bByDate[d].push(r); });
+  const allKeys = [...new Set([...Object.keys(bByDate), ...Object.keys(eByDate)])].sort();
+  if (!allKeys.length) return null;
   const loads = [];
-  for (let i = 27; i >= 0; i--) {
-    const dt = new Date(); dt.setDate(dt.getDate()-i); const d = dk(dt);
+  const startDt = new Date(allKeys[0]);
+  const endDt   = new Date(); endDt.setHours(12,0,0,0);
+  for (let dt = new Date(startDt); dt <= endDt; dt.setDate(dt.getDate()+1)) {
+    const d = dk(dt);
     const rpe = bByDate[d] ? avgArr(bByDate[d].map(r=>r.rpe)) : 0;
     let load = 0;
     if (rpe > 0) {
@@ -881,6 +887,9 @@ function computePlayerStats(bienestarFull, entrenos) {
 
   const eByDate = {};
   entrenos.forEach(e => { const d=dk(e.fecha); if(d) eByDate[d]=e; });
+  // Pre-build all-time entreno lookup for ACWR history outside current period
+  const allEByDate = {};
+  rawData.entrenos.forEach(e => { const d=dk(e.fecha); if(d) allEByDate[d]=e; });
 
   function getLoad(bRec, eRec) {
     if (!bRec || bRec.rpe <= 0) return 0;
@@ -913,15 +922,19 @@ function computePlayerStats(bienestarFull, entrenos) {
     const iByDate = {};
     rawData.bienestar.filter(r => r.jugador === nombre).forEach(r => { const d=dk(r.fecha); iByDate[d]=r; });
 
-    // 4A — Individual ACWR EWMA (rolling 28 days, zero-load fix — 4E)
-    const iLoads28 = [];
-    for (let i = 27; i >= 0; i--) {
-      const dt = new Date(); dt.setDate(dt.getDate()-i); const d = dk(dt);
-      const bRec = iByDate[d];
-      const eRec = eByDate[d] || rawData.entrenos.find(e => dk(e.fecha)===d);
-      iLoads28.push(getLoad(bRec, eRec));
+    // 4A — Individual ACWR EWMA (full history, zero-load fix — 4E)
+    const iAllKeys = Object.keys(iByDate).sort();
+    let ewmaRes = null;
+    if (iAllKeys.length >= 28) {
+      const iLoadsAll = [];
+      const iStart = new Date(iAllKeys[0]);
+      const iEnd   = new Date(); iEnd.setHours(12,0,0,0);
+      for (let dt = new Date(iStart); dt <= iEnd; dt.setDate(dt.getDate()+1)) {
+        const d = dk(dt);
+        iLoadsAll.push(getLoad(iByDate[d], allEByDate[d]));
+      }
+      ewmaRes = computeACWR_EWMA(iLoadsAll);
     }
-    const ewmaRes = computeACWR_EWMA(iLoads28);
     const acwr      = ewmaRes ? ewmaRes.acwr : null;
     const acuteEWMA = ewmaRes ? ewmaRes.acuteEWMA : null;
 
@@ -937,8 +950,7 @@ function computePlayerStats(bienestarFull, entrenos) {
       let total = 0;
       for (let i = endAgo; i >= startAgo; i--) {
         const dt = new Date(); dt.setDate(dt.getDate()-i); const d = dk(dt);
-        const eRec = eByDate[d] || rawData.entrenos.find(e => dk(e.fecha)===d);
-        total += getLoad(iByDate[d], eRec);
+        total += getLoad(iByDate[d], allEByDate[d]);
       }
       return total;
     }
@@ -951,8 +963,7 @@ function computePlayerStats(bienestarFull, entrenos) {
     const weekLoads = [];
     for (let i = 6; i >= 0; i--) {
       const dt = new Date(); dt.setDate(dt.getDate()-i); const d = dk(dt);
-      const eRec = eByDate[d] || rawData.entrenos.find(e => dk(e.fecha)===d);
-      weekLoads.push(getLoad(iByDate[d], eRec));
+      weekLoads.push(getLoad(iByDate[d], allEByDate[d]));
     }
     const wkTotal    = weekLoads.reduce((a,b)=>a+b,0);
     const wkMean     = wkTotal / 7;
