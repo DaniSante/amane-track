@@ -558,7 +558,7 @@ async function doGateLogin() {
   // Try a real check
   try {
     const r2 = await api({action:'check_submissions', teamId:TEAM_ID, teamKey:TEAM_KEY});
-    if(r2.ok !== false) {
+    if(r2.ok === true) {
       localStorage.setItem('ft_staff_team', TEAM_ID);
       localStorage.setItem('ft_staff_key',  TEAM_KEY);
       showPanel();

@@ -376,6 +376,7 @@ async function doLogin() {
     const r = await api({action:'admin_login', password: pass});
     if(r.ok) {
       adminPass = pass;
+      try { localStorage.setItem('ft_admin_session', JSON.stringify({pw: pass, ts: Date.now()})); } catch(e) {}
       document.getElementById('login-wrap').style.display = 'none';
       document.getElementById('main-panel').style.display = 'block';
       loadTeams();
@@ -458,7 +459,7 @@ function renderTeams() {
             ${t.active
               ? `<button class="btn-toggle btn-toggle-off" onclick="toggleTeam('${t.teamId}')">Desactivar equipo</button>`
               : `<button class="btn-toggle btn-toggle-on"  onclick="toggleTeam('${t.teamId}')">Activar equipo</button>`}
-            <a class="btn-toggle" style="background:rgba(96,165,250,.1);border-color:#60a5fa;color:#60a5fa;text-decoration:none;display:inline-flex;align-items:center;gap:6px" href="${BASE_URL}dashboard.html?team=${t.teamId}&adminPw=${adminPass}" target="_blank">Dashboard</a>
+            <button class="btn-toggle" style="background:rgba(96,165,250,.1);border-color:#60a5fa;color:#60a5fa;" onclick="openDashboard('${t.teamId}')">Dashboard</button>
           </div>
         </div>
       </div>
@@ -484,8 +485,14 @@ function copyWA(url, name) {
   copyText(msg, '📱 Mensaje WhatsApp copiado');
 }
 
+function openDashboard(teamId) {
+  try { localStorage.setItem('ft_admin_session', JSON.stringify({pw: adminPass, ts: Date.now()})); } catch(e) {}
+  window.open(BASE_URL + 'dashboard.html?team=' + encodeURIComponent(teamId));
+}
+
 function logout() {
   adminPass = '';
+  try { localStorage.removeItem('ft_admin_session'); } catch(e) {}
   document.getElementById('login-wrap').style.display = 'flex';
   document.getElementById('main-panel').style.display = 'none';
   document.getElementById('admin-pass').value = '';

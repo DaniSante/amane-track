@@ -524,7 +524,16 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxPBKNvOhqXCK1Vz7Pj0
 const params   = new URLSearchParams(window.location.search);
 const TEAM_ID  = params.get('team')    || '';
 const TEAM_KEY = params.get('key')     || '';
-const ADMIN_PW = params.get('adminPw') || '';
+let ADMIN_PW   = '';
+try {
+  const raw = localStorage.getItem('ft_admin_session');
+  if (raw) {
+    const s = JSON.parse(raw);
+    if (s && (Date.now() - s.ts) < 300000) ADMIN_PW = s.pw;
+    localStorage.removeItem('ft_admin_session');
+  }
+} catch(e) {}
+if (!ADMIN_PW) ADMIN_PW = params.get('adminPw') || '';
 
 let rawData        = null;
 let currentPeriod  = 'semana';
